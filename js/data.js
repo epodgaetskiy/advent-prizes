@@ -74,35 +74,33 @@ function buildTreePositions() {
     }
   });
   // решта днів — стовбур/подарунки під ялинкою
-  const trunk = [[42, 92], [50, 95], [58, 92]];
+  const trunk = [[42, 88], [50, 90], [58, 88]];
   let t = 0;
   while (day <= PRIZES.length && t < trunk.length) {
     positions[day++] = { x: trunk[t][0], y: trunk[t][1] };
     t++;
   }
-  // якщо ще лишились — рівномірно знизу
   let extra = 0;
   while (day <= PRIZES.length) {
-    positions[day++] = { x: 15 + extra * 18, y: 88 };
+    positions[day++] = { x: 18 + extra * 16, y: 86 };
     extra++;
   }
   return positions;
 }
 
-/* ----- допоміжне: «розкидані» координати (детерміновано) ----- */
-function buildScatterPositions() {
+/* ----- допоміжне: «змійка» (бустрофедон) ----- */
+// 3 горизонтальні смуги, напрямок чергується — як змійка.
+function buildSnakePositions() {
+  const cols = 8, rows = 3;
+  const xL = 8, xR = 92, yT = 22, yB = 78;
   const positions = {};
-  // псевдовипадкові, але фіксовані значення — щоб розкладка не «стрибала»
-  let seed = 42;
-  const rnd = () => {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    return seed / 0x7fffffff;
-  };
-  PRIZES.forEach((p) => {
-    positions[p.day] = {
-      x: 8 + rnd() * 84,
-      y: 8 + rnd() * 84,
-    };
+  PRIZES.forEach((p, i) => {
+    const r = Math.floor(i / cols);
+    let c = i % cols;
+    if (r % 2 === 1) c = cols - 1 - c; // непарні ряди — у зворотному напрямку
+    const x = xL + (xR - xL) * (c / (cols - 1));
+    const y = yT + (yB - yT) * (r / (rows - 1));
+    positions[p.day] = { x: +x.toFixed(1), y: +y.toFixed(1) };
   });
   return positions;
 }
@@ -122,24 +120,10 @@ const LAYOUTS = [
     positions: buildTreePositions(),
   },
   {
-    id: 'scatter',
-    name: '✨ Розкидані',
+    id: 'snake',
+    name: '🐍 Змійка',
     type: 'free',
-    positions: buildScatterPositions(),
-  },
-  {
-    id: 'wave',
-    name: '🌊 Хвиля',
-    type: 'free',
-    positions: (() => {
-      const positions = {};
-      PRIZES.forEach((p, i) => {
-        const x = 6 + (i / (PRIZES.length - 1)) * 88;
-        const y = 50 + Math.sin(i / 1.6) * 34;
-        positions[p.day] = { x, y };
-      });
-      return positions;
-    })(),
+    positions: buildSnakePositions(),
   },
   {
     id: 'long',

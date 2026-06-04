@@ -37,6 +37,7 @@
   const previewBoard = document.getElementById('previewBoard');
   const deviceWrap = document.getElementById('deviceWrap');
   const saveOwnBtn = document.getElementById('saveOwnBtn');
+  const autosaveHint = document.getElementById('autosaveHint');
   const pvTabs = Array.from(document.querySelectorAll('.pv-tab'));
 
   // Стан
@@ -137,7 +138,12 @@
 
   /* ---------- Модал ---------- */
   function openModal() { cfgModal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
-  function closeModal() { cfgModal.style.display = 'none'; document.body.style.overflow = ''; }
+  function closeModal() {
+    if (editingDraft) autosaveTick(); // зберегти останні зміни перед закриттям
+    stopAutosave();
+    cfgModal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
   cfgModal.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close')) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && cfgModal.style.display === 'flex') closeModal(); });
 
@@ -185,17 +191,52 @@
       snapToggle.checked = snap;
       renderEditor();
       wsLayoutName.textContent = 'Editing: ' + (working === 'custom' ? 'Custom' : layoutOf(working).name);
+      startAutosave();
     } else {
+      stopAutosave();
       editPane.style.display = 'none';
       previewPane.style.display = 'block';
       deviceToggle.style.display = 'inline-flex';
       previewLayout = editingDraft ? draftLayout() : (gridMode ? GRID : layoutOf(working));
       renderPreview();
-      wsLayoutName.textContent = previewLayout.name + (editingDraft ? ' (unsaved)' : '');
+      wsLayoutName.textContent = previewLayout.name;
     }
     updateSaveBtn();
   }
   function updateSaveBtn() { saveOwnBtn.style.display = editingDraft ? '' : 'none'; }
+
+  /* ---------- Автозбереження кожні 5 c (під час редагування) ---------- */
+  let autosaveTimer = null;
+  let lastSavedSig = null;
+  let hintTimer = null;
+  function startAutosave() {
+    stopAutosave();
+    lastSavedSig = editingDraft ? JSON.stringify(editingDraft) : null;
+    autosaveTimer = setInterval(autosaveTick, 5000);
+  }
+  function stopAutosave() {
+    if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null; }
+  }
+  function autosaveTick() {
+    if (!editingDraft) return;
+    const sig = JSON.stringify(editingDraft);
+    if (sig === lastSavedSig) return; // без змін — не зберігаємо
+    lastSavedSig = sig;
+    customPositions = JSON.parse(sig);
+    saveCustom();
+    pattern = 'custom';
+    working = 'custom';
+    kind = 'map';
+    saveState();
+    renderInline();
+    buildSidebar();
+    flashSaved();
+  }
+  function flashSaved() {
+    autosaveHint.textContent = '✓ Auto-saved';
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => { autosaveHint.textContent = ''; }, 1800);
+  }
 
   /* ---------- Сайдбар патернів ---------- */
   function buildSidebar() {
@@ -308,9 +349,10 @@
     } else {
       el.className = 'board--pv-map';
       el.style.position = 'relative';
-      el.style.height = (layout.long
-        ? PRIZES.length * (device === 'mobile' ? 40 : 34)
-        : (device === 'mobile' ? w * 4 / 3 : w * 11 / 16)) + 'px';
+      // звичайна мапа заповнює екран пристрою; довга стрічка — вища за екран (скрол)
+      el.style.height = layout.long
+        ? (PRIZES.length * (device === 'mobile' ? 40 : 34)) + 'px'
+        : '100%';
       const size = device === 'mobile' ? Math.max(24, w / 5) : Math.max(26, w / 9);
       el.style.setProperty('--pv-size', size + 'px');
       PRIZES.forEach((p) => {
