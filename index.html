@@ -23,7 +23,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=9" />
+  <link rel="stylesheet" href="css/styles.css?v=10" />
 </head>
 <body class="bg-[#f1f3f4] text-ink">
 
@@ -58,115 +58,91 @@
             class="rounded-md border border-line bg-white px-4 py-2 text-sm transition hover:bg-gray-50">
             Choose pattern
           </button>
+          <button id="customizeBtn"
+            class="rounded-md border border-line bg-white px-4 py-2 text-sm transition hover:bg-gray-50">
+            ✏️ Customize
+          </button>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- Модалка: галерея патернів + редактор -->
-  <div id="patternModal" class="fixed inset-0 z-50 items-center justify-center p-4" style="display:none">
-    <div class="absolute inset-0 bg-black/40" data-close-pattern></div>
-    <div class="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
+  <!-- Широкий модал: зліва патерни, справа Edit / Preview -->
+  <div id="cfgModal" class="fixed inset-0 z-50 items-center justify-center p-4" style="display:none">
+    <div class="absolute inset-0 bg-black/40" data-close></div>
+    <div class="relative flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
 
       <!-- Head -->
-      <div class="flex items-center justify-between border-b border-line px-5 py-4">
-        <h2 id="modalHeading" class="text-base font-medium">Choose pattern</h2>
-        <button class="text-sub transition hover:text-ink" data-close-pattern aria-label="Close">✕</button>
+      <div class="flex items-center justify-between border-b border-line px-5 py-3">
+        <h2 class="text-base font-medium">Calendar layout</h2>
+        <button class="text-sub transition hover:text-ink" data-close aria-label="Close">✕</button>
       </div>
 
-      <!-- Галерея -->
-      <div id="galleryView" class="flex min-h-0 flex-1 flex-col">
-        <div id="patternGrid" class="grid flex-1 grid-cols-2 gap-3 overflow-auto p-5 sm:grid-cols-3"></div>
-        <div class="flex items-center justify-between gap-3 border-t border-line px-5 py-4">
-          <span class="text-[13px] text-sub">or arrange the prizes yourself</span>
-          <button id="createOwnBtn"
-            class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primaryDark">
-            Create your own
-          </button>
-        </div>
-      </div>
-
-      <!-- Редактор (вкладки Edit / Preview) -->
-      <div id="editorView" class="flex min-h-0 flex-1 flex-col" hidden>
-        <!-- перемикач Edit / Preview -->
-        <div class="flex items-center border-b border-line px-5 py-3">
-          <div class="inline-flex rounded-md bg-gray-100 p-0.5 ring-1 ring-line">
-            <button id="tabEdit" class="ws-tab rounded px-3 py-1 text-[13px]">✏️ Edit layout</button>
-            <button id="tabPreview" class="ws-tab rounded px-3 py-1 text-[13px]">👁 Preview</button>
+      <div class="flex min-h-0 flex-1">
+        <!-- Сайдбар: вибір патернів -->
+        <aside id="sidebar" class="flex w-60 shrink-0 flex-col border-r border-line">
+          <div class="px-4 pt-4 pb-2 text-[11px] font-semibold uppercase tracking-wide text-label">Patterns</div>
+          <div id="patternList" class="flex-1 space-y-1 overflow-auto px-3 pb-3"></div>
+          <div class="border-t border-line p-3">
+            <button id="createOwnBtn"
+              class="w-full rounded-md border border-line px-3 py-2 text-sm transition hover:bg-gray-50">
+              ✏️ Create your own
+            </button>
           </div>
-        </div>
+        </aside>
 
-        <!-- пейн редагування -->
-        <div id="editPane" class="flex min-h-0 flex-1 flex-col">
-          <div class="flex flex-wrap items-center gap-4 border-b border-line px-5 py-2.5">
-            <label class="flex cursor-pointer items-center gap-2 text-[13px]">
-              <input type="checkbox" id="snapToggle" class="h-4 w-4 accent-ink" /> Snap to grid
-            </label>
-            <button id="copyCoordsBtn" class="rounded-md border border-line px-3 py-1.5 text-[13px] transition hover:bg-gray-50">📋 Copy coordinates</button>
-            <button id="clearCustomBtn" class="rounded-md border border-line px-3 py-1.5 text-[13px] transition hover:bg-gray-50">↺ Reset</button>
-            <span class="ml-auto text-[12px] text-sub">Drag prizes to position them</span>
-          </div>
-          <div class="min-h-0 flex-1 overflow-auto p-5">
-            <div id="editorBoard" class="ed-board"></div>
-          </div>
-        </div>
-
-        <!-- пейн прев'ю (того ж драфта) -->
-        <div id="edPreviewPane" class="flex min-h-0 flex-1 flex-col" hidden>
-          <div class="flex items-center gap-3 border-b border-line px-5 py-2.5">
+        <!-- Основна частина: Edit / Preview -->
+        <section class="flex min-h-0 flex-1 flex-col">
+          <div class="flex items-center gap-3 border-b border-line px-5 py-3">
             <div class="inline-flex rounded-md bg-gray-100 p-0.5 ring-1 ring-line">
-              <button data-edevice="desktop" class="ed-pv-tab rounded px-3 py-1 text-[13px]">🖥 Desktop</button>
-              <button data-edevice="mobile" class="ed-pv-tab rounded px-3 py-1 text-[13px]">📱 Mobile</button>
+              <button id="wsTabEdit" class="ws-tab rounded px-4 py-1.5 text-[13px]">✏️ Edit</button>
+              <button id="wsTabPreview" class="ws-tab rounded px-4 py-1.5 text-[13px]">👁 Preview</button>
             </div>
-            <span id="edPreviewLabel" class="ml-auto text-[12px] text-sub"></span>
+            <span id="wsLayoutName" class="text-[13px] text-sub"></span>
+            <div id="deviceToggle" class="ml-auto inline-flex rounded-md bg-gray-100 p-0.5 ring-1 ring-line" hidden>
+              <button data-device="desktop" class="pv-tab rounded px-3 py-1 text-[13px]">🖥 Desktop</button>
+              <button data-device="mobile" class="pv-tab rounded px-3 py-1 text-[13px]">📱 Mobile</button>
+            </div>
           </div>
-          <div class="min-h-0 flex-1 overflow-auto bg-[#f1f3f4] p-6">
-            <div id="edDeviceWrap" class="device device--desktop mx-auto w-fit">
+
+          <!-- Edit -->
+          <div id="editPane" class="flex min-h-0 flex-1 flex-col">
+            <div class="flex flex-wrap items-center gap-4 border-b border-line px-5 py-2">
+              <label class="flex cursor-pointer items-center gap-2 text-[13px]">
+                <input type="checkbox" id="snapToggle" class="h-4 w-4 accent-ink" /> Snap to grid
+              </label>
+              <button id="copyCoordsBtn" class="rounded-md border border-line px-3 py-1.5 text-[13px] transition hover:bg-gray-50">📋 Copy coordinates</button>
+              <button id="clearCustomBtn" class="rounded-md border border-line px-3 py-1.5 text-[13px] transition hover:bg-gray-50">↺ Reset</button>
+              <span class="ml-auto text-[12px] text-sub">Drag prizes to position them</span>
+            </div>
+            <div class="min-h-0 flex-1 overflow-auto p-5">
+              <div id="editorBoard" class="ed-board ed-board--lg"></div>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div id="previewPane" class="min-h-0 flex-1 overflow-auto bg-[#f1f3f4] p-6" hidden>
+            <div id="deviceWrap" class="device device--desktop mx-auto w-fit">
               <div class="device-frame">
                 <div class="device-bar"></div>
-                <div class="pv-screen"><div id="edPreviewBoard"></div></div>
+                <div class="pv-screen"><div id="previewBoard"></div></div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- футер -->
-        <div class="flex items-center justify-between gap-3 border-t border-line px-5 py-4">
-          <button id="backBtn" class="rounded-md px-4 py-2 text-sm text-sub transition hover:text-ink">← Back</button>
-          <button id="saveOwnBtn"
-            class="rounded-md bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primaryDark">
-            Save layout
-          </button>
-        </div>
-      </div>
-
-      <!-- Прев'ю Desktop / Mobile -->
-      <div id="previewView" class="flex min-h-0 flex-1 flex-col" hidden>
-        <div class="flex items-center gap-3 border-b border-line px-5 py-3">
-          <div class="inline-flex rounded-md bg-gray-100 p-0.5 ring-1 ring-line">
-            <button data-device="desktop" class="pv-tab rounded px-3 py-1 text-[13px]">🖥 Desktop</button>
-            <button data-device="mobile" class="pv-tab rounded px-3 py-1 text-[13px]">📱 Mobile</button>
+          <!-- Футер -->
+          <div class="flex items-center justify-end gap-3 border-t border-line px-5 py-4">
+            <button id="saveOwnBtn"
+              class="rounded-md bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primaryDark">
+              Save layout
+            </button>
           </div>
-          <span id="previewLabel" class="ml-auto text-[12px] text-sub"></span>
-        </div>
-
-        <div class="min-h-0 flex-1 overflow-auto bg-[#f1f3f4] p-6">
-          <div id="deviceWrap" class="device device--desktop mx-auto w-fit">
-            <div class="device-frame">
-              <div class="device-bar"></div>
-              <div class="pv-screen"><div id="previewBoard"></div></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between border-t border-line px-5 py-4">
-          <button id="previewBackBtn" class="rounded-md px-4 py-2 text-sm text-sub transition hover:text-ink">← Back</button>
-        </div>
+        </section>
       </div>
     </div>
   </div>
 
-  <script src="js/data.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/data.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 </html>
