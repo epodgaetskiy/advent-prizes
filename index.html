@@ -23,7 +23,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=7" />
+  <link rel="stylesheet" href="css/styles.css?v=8" />
 </head>
 <body class="bg-[#f1f3f4] text-ink">
 
@@ -34,13 +34,16 @@
       <!-- Поле форми: Calendar layout -->
       <div class="text-[15px] font-medium text-label">Calendar layout <span class="text-req">*</span></div>
 
-      <div class="mt-3 flex items-center gap-7">
-        <label class="flex cursor-pointer items-center gap-2 text-[15px]">
-          <input type="radio" name="kind" value="grid" class="h-[18px] w-[18px] accent-ink" /> Grid
-        </label>
-        <label class="flex cursor-pointer items-center gap-2 text-[15px]">
-          <input type="radio" name="kind" value="map" class="h-[18px] w-[18px] accent-ink" /> Map
-        </label>
+      <div class="mt-3 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-7">
+          <label class="flex cursor-pointer items-center gap-2 text-[15px]">
+            <input type="radio" name="kind" value="grid" class="h-[18px] w-[18px] accent-ink" /> Grid
+          </label>
+          <label class="flex cursor-pointer items-center gap-2 text-[15px]">
+            <input type="radio" name="kind" value="map" class="h-[18px] w-[18px] accent-ink" /> Map
+          </label>
+        </div>
+        <button id="previewBtn" class="text-sm text-primary transition hover:underline">👁 Preview</button>
       </div>
 
       <!-- Обраний патерн (тільки для Map) -->
@@ -99,17 +102,44 @@
         </div>
 
         <div class="flex items-center justify-between gap-3 border-t border-line px-5 py-4">
-          <button id="backBtn" class="rounded-md px-4 py-2 text-sm text-sub transition hover:text-ink">← Back</button>
+          <div class="flex items-center gap-2">
+            <button id="backBtn" class="rounded-md px-4 py-2 text-sm text-sub transition hover:text-ink">← Back</button>
+            <button id="editorPreviewBtn" class="rounded-md border border-line px-3 py-2 text-sm transition hover:bg-gray-50">👁 Preview</button>
+          </div>
           <button id="saveOwnBtn"
             class="rounded-md bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primaryDark">
             Save layout
           </button>
         </div>
       </div>
+
+      <!-- Прев'ю Desktop / Mobile -->
+      <div id="previewView" class="flex min-h-0 flex-1 flex-col" hidden>
+        <div class="flex items-center gap-3 border-b border-line px-5 py-3">
+          <div class="inline-flex rounded-md bg-gray-100 p-0.5 ring-1 ring-line">
+            <button data-device="desktop" class="pv-tab rounded px-3 py-1 text-[13px]">🖥 Desktop</button>
+            <button data-device="mobile" class="pv-tab rounded px-3 py-1 text-[13px]">📱 Mobile</button>
+          </div>
+          <span id="previewLabel" class="ml-auto text-[12px] text-sub"></span>
+        </div>
+
+        <div class="min-h-0 flex-1 overflow-auto bg-[#f1f3f4] p-6">
+          <div id="deviceWrap" class="device device--desktop mx-auto w-fit">
+            <div class="device-frame">
+              <div class="device-bar"></div>
+              <div class="pv-screen"><div id="previewBoard"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between border-t border-line px-5 py-4">
+          <button id="previewBackBtn" class="rounded-md px-4 py-2 text-sm text-sub transition hover:text-ink">← Back</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <script src="js/data.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/data.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>

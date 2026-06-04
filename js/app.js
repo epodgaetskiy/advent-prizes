@@ -30,6 +30,16 @@
   const clearCustomBtn = document.getElementById('clearCustomBtn');
   const backBtn = document.getElementById('backBtn');
   const saveOwnBtn = document.getElementById('saveOwnBtn');
+  const editorPreviewBtn = document.getElementById('editorPreviewBtn');
+
+  // DOM — прев'ю
+  const previewBtn = document.getElementById('previewBtn');
+  const previewView = document.getElementById('previewView');
+  const previewBoard = document.getElementById('previewBoard');
+  const previewLabel = document.getElementById('previewLabel');
+  const deviceWrap = document.getElementById('deviceWrap');
+  const previewBackBtn = document.getElementById('previewBackBtn');
+  const pvTabs = Array.from(document.querySelectorAll('.pv-tab'));
 
   // Стан
   let kind = localStorage.getItem(K.kind) === 'map' ? 'map' : 'grid';
@@ -37,6 +47,11 @@
   let customPositions = loadCustom();
   let snap = localStorage.getItem(K.snap) === '1';
   let draft = null; // робоча копія координат у редакторі
+
+  // прев'ю
+  let device = 'desktop';
+  let previewLayout = null;
+  let previewFrom = 'inline'; // 'inline' | 'gallery' | 'editor'
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -127,17 +142,89 @@
   function closeModal() { patternModal.style.display = 'none'; document.body.style.overflow = ''; }
   function showGallery() {
     editorView.hidden = true;
+    previewView.hidden = true;
     galleryView.hidden = false;
     modalHeading.textContent = 'Choose pattern';
     createOwnBtn.textContent = customPositions ? 'Edit your layout' : 'Create your own';
     buildGallery();
   }
+  let editorHeading = 'Create your own';
   function showEditor(headingText) {
     galleryView.hidden = true;
+    previewView.hidden = true;
     editorView.hidden = false;
-    modalHeading.textContent = headingText;
+    if (headingText) editorHeading = headingText;
+    modalHeading.textContent = editorHeading;
     snapToggle.checked = snap;
     renderEditor();
+  }
+
+  /* ---------- Прев'ю Desktop / Mobile ---------- */
+  function showPreview(layout, from) {
+    previewLayout = layout;
+    previewFrom = from;
+    galleryView.hidden = true;
+    editorView.hidden = true;
+    previewView.hidden = false;
+    modalHeading.textContent = 'Preview';
+    openModal();
+    renderPreview();
+  }
+  function pvCell(prize) {
+    const el = document.createElement('div');
+    el.className = 'pv-cell';
+    el.textContent = prize.day;
+    return el;
+  }
+  function renderPreview() {
+    deviceWrap.className = 'device mx-auto w-fit device--' + device;
+    pvTabs.forEach((t) => {
+      const on = t.dataset.device === device;
+      t.classList.toggle('bg-white', on);
+      t.classList.toggle('shadow-sm', on);
+      t.classList.toggle('text-ink', on);
+      t.classList.toggle('text-sub', !on);
+    });
+
+    const layout = previewLayout;
+    const el = previewBoard;
+    el.className = '';
+    el.removeAttribute('style');
+    const w = el.clientWidth || (device === 'mobile' ? 228 : 500);
+    const isGrid = layout.type === 'grid';
+
+    if (isGrid) {
+      const cols = device === 'mobile' ? 3 : (layout.cols || 6);
+      el.className = 'board--pv-grid';
+      el.style.display = 'grid';
+      el.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+      el.style.gap = '6px';
+      const sorted = [...PRIZES].sort((a, b) => {
+        const pa = layout.positions[a.day], pb = layout.positions[b.day];
+        return pa.row - pb.row || pa.col - pb.col;
+      });
+      sorted.forEach((p) => el.appendChild(pvCell(p)));
+    } else {
+      el.className = 'board--pv-map';
+      el.style.position = 'relative';
+      el.style.height = (layout.long
+        ? PRIZES.length * (device === 'mobile' ? 40 : 34)
+        : (device === 'mobile' ? w * 4 / 3 : w * 11 / 16)) + 'px';
+      const size = device === 'mobile' ? Math.max(24, w / 5) : Math.max(26, w / 9);
+      el.style.setProperty('--pv-size', size + 'px');
+      PRIZES.forEach((p) => {
+        const pos = layout.positions[p.day];
+        if (!pos) return;
+        const c = pvCell(p);
+        c.style.setProperty('--x', pos.x + '%');
+        c.style.setProperty('--y', pos.y + '%');
+        el.appendChild(c);
+      });
+    }
+    previewLabel.textContent = (device === 'mobile' ? 'Mobile' : 'Desktop') + ' · ' + layout.name;
+  }
+  function currentSelectionLayout() {
+    return kind === 'grid' ? GRID : selectedMapLayout();
   }
 
   patternModal.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close-pattern')) closeModal(); });
@@ -261,6 +348,17 @@
   createOwnBtn.addEventListener('click', () => openEditor(!!customPositions));
   backBtn.addEventListener('click', showGallery);
   saveOwnBtn.addEventListener('click', saveOwn);
+
+  // Прев'ю
+  previewBtn.addEventListener('click', () => showPreview(currentSelectionLayout(), 'inline'));
+  editorPreviewBtn.addEventListener('click', () =>
+    showPreview({ id: 'custom', name: 'Custom', type: 'free', positions: draft }, 'editor'));
+  previewBackBtn.addEventListener('click', () => {
+    if (previewFrom === 'editor') showEditor();
+    else if (previewFrom === 'gallery') showGallery();
+    else closeModal();
+  });
+  pvTabs.forEach((t) => t.addEventListener('click', () => { device = t.dataset.device; renderPreview(); }));
   clearCustomBtn.addEventListener('click', () => { draft = gridSeed(6); renderEditor(); });
   copyCoordsBtn.addEventListener('click', copyCoords);
   snapToggle.addEventListener('change', () => {

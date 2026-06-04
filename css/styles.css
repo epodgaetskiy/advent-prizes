@@ -65,3 +65,42 @@
 
 /* варіант: межі картки активного патерну */
 .pattern-card--active { border-color: #2fa84f !important; box-shadow: inset 0 0 0 1px #2fa84f; }
+
+/* ---- Прев'ю Desktop / Mobile ---- */
+.device-frame { background: #fff; overflow: hidden; box-shadow: 0 10px 34px rgba(0, 0, 0, 0.18); }
+
+.device--desktop .device-frame { width: 560px; max-width: 100%; border: 1px solid #c8ccd1; border-radius: 10px; }
+.device--desktop .device-bar {
+  height: 24px;
+  background: #e8eaed;
+  border-bottom: 1px solid #dadce0;
+  background-image:
+    radial-gradient(circle 3px at 15px 12px, #c1c4c9 99%, transparent),
+    radial-gradient(circle 3px at 30px 12px, #c1c4c9 99%, transparent),
+    radial-gradient(circle 3px at 45px 12px, #c1c4c9 99%, transparent);
+  background-repeat: no-repeat;
+}
+.device--desktop .pv-screen { height: 340px; overflow: auto; padding: 12px; }
+
+.device--mobile .device-frame { width: 280px; border: 10px solid #202124; border-radius: 30px; }
+.device--mobile .device-bar { position: relative; height: 18px; background: #202124; }
+.device--mobile .device-bar::after {
+  content: "";
+  position: absolute; left: 50%; top: 4px; transform: translateX(-50%);
+  width: 80px; height: 7px; border-radius: 99px; background: #3a3d42;
+}
+.device--mobile .pv-screen { height: 480px; overflow: auto; padding: 10px; }
+
+.pv-cell {
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; border: 1px solid #dadce0; border-radius: 6px;
+  font-size: 11px; font-weight: 600; color: #202124;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+.board--pv-grid .pv-cell { aspect-ratio: 1 / 1; width: 100%; }
+.board--pv-map .pv-cell {
+  position: absolute;
+  width: var(--pv-size); height: var(--pv-size);
+  left: var(--x); top: var(--y);
+  transform: translate(-50%, -50%);
+}
