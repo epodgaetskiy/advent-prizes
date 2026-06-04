@@ -1,69 +1,67 @@
-/* Кастомні стилі поверх Tailwind: механіка перевертання, мапа, редагування */
+/* Кастом поверх Tailwind: прев'ю-патернів і редактор-перетягування (світла тема) */
 
-:root { --cell-size: 104px; }
+:root { --ed-cell: 58px; }
 
-.board { position: relative; width: 100%; }
+/* SVG-прев'ю патернів (крапки) тягне колір з currentColor */
+.preview svg,
+#patternThumb svg { display: block; width: 100%; height: 100%; }
 
-/* ---- Сітка ---- */
-.board--grid { display: grid; }
-.board--grid .cell { aspect-ratio: 1 / 1; width: 100%; }
-
-/* ---- Мапа (вільні координати x/y у %) ---- */
-.board--map { aspect-ratio: 16 / 11; min-height: 340px; }
-.board--map .cell {
+/* ---- Поле редактора (мапа з вільними координатами) ---- */
+.ed-board {
+  position: relative;
+  width: 100%;
+  height: 440px;
+  background:
+    linear-gradient(#eef0f2 1px, transparent 1px) 0 0 / 100% 5%,
+    linear-gradient(90deg, #eef0f2 1px, transparent 1px) 0 0 / 5% 100%,
+    #fafbfc;
+  border: 1px solid var(--line, #dadce0);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ed-cell {
   position: absolute;
-  width: var(--cell-size);
-  height: var(--cell-size);
   left: var(--x);
   top: var(--y);
   transform: translate(-50%, -50%);
-}
-/* Довга стрічка: висоту задає JS (вища за екран) */
-.board--long { aspect-ratio: auto !important; min-height: 0 !important; }
-
-/* ---- Клітинка / дверцята ---- */
-.cell {
-  border: none;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-  perspective: 700px;
-  -webkit-tap-highlight-color: transparent;
-}
-.cell__inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
-}
-.cell.is-open .cell__inner { transform: rotateY(180deg); }
-.cell__face {
-  position: absolute;
-  inset: 0;
+  width: var(--ed-cell);
+  height: var(--ed-cell);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 1rem;
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #202124;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
-.cell__back { transform: rotateY(180deg); }
-
-/* Координатний бейдж — лише в режимі редагування */
-.cell__coord { display: none; }
-.board.is-edit .cell__coord { display: block; }
-
-/* ---- Режим редагування ---- */
-.board.is-edit .cell { cursor: grab; touch-action: none; }
-.board.is-edit .cell__inner { transform: none !important; }
-.board.is-edit .cell.is-dragging { z-index: 10; cursor: grabbing; }
-.board.is-edit .cell.is-dragging .cell__inner { transform: scale(1.06) !important; }
-
-@media (max-width: 640px) {
-  .board--map { aspect-ratio: 3 / 4; }
+.ed-cell:hover { border-color: #2fa84f; }
+.ed-cell.is-dragging {
+  cursor: grabbing;
+  z-index: 10;
+  border-color: #2fa84f;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  transform: translate(-50%, -50%) scale(1.06);
 }
-@media (prefers-reduced-motion: reduce) {
-  .cell__inner { transition: none; }
+.ed-cell__coord {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  background: #202124;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
 }
+
+/* варіант: межі картки активного патерну */
+.pattern-card--active { border-color: #2fa84f !important; box-shadow: inset 0 0 0 1px #2fa84f; }
