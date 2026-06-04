@@ -192,7 +192,16 @@
     const layout = getLayout(currentLayoutId);
     const isGrid = layout.type === 'grid';
 
-    board.className = 'board ' + (isGrid ? 'board--grid' : 'board--free') + (mode === 'edit' ? ' is-edit' : '');
+    board.className = 'board ' + (isGrid ? 'board--grid' : 'board--free')
+      + (layout.long ? ' board--long' : '')
+      + (mode === 'edit' ? ' is-edit' : '');
+
+    // Довга стрічка: явно задаємо висоту поля більшу за екран → з'являється прокрутка
+    if (layout.long) {
+      board.style.height = Math.max(PRIZES.length * 120, window.innerHeight * 2.2) + 'px';
+    } else {
+      board.style.height = '';
+    }
 
     if (isGrid) {
       board.style.setProperty('--cols', layout.cols || 6);
@@ -361,7 +370,13 @@
   let resizeRAF = null;
   window.addEventListener('resize', () => {
     cancelAnimationFrame(resizeRAF);
-    resizeRAF = requestAnimationFrame(sizeFreeCells);
+    resizeRAF = requestAnimationFrame(() => {
+      const layout = getLayout(currentLayoutId);
+      if (layout.long) {
+        board.style.height = Math.max(PRIZES.length * 120, window.innerHeight * 2.2) + 'px';
+      }
+      sizeFreeCells();
+    });
   });
 
   /* ---------- Старт ---------- */

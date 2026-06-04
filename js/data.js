@@ -141,6 +141,22 @@ const LAYOUTS = [
       return positions;
     })(),
   },
+  {
+    id: 'long',
+    name: '📜 Довга стрічка',
+    type: 'free',
+    long: true, // поле вище за екран → сторінка прокручується (реальний кейс)
+    positions: (() => {
+      const positions = {};
+      const n = PRIZES.length;
+      PRIZES.forEach((p, i) => {
+        const y = +(((i + 0.5) / n) * 100).toFixed(1);   // рівномірно зверху вниз
+        const x = +(50 + Math.sin(i * 0.9) * 34).toFixed(1); // звивиста стрічка
+        positions[p.day] = { x, y };
+      });
+      return positions;
+    })(),
+  },
 ];
 
 // Доступ із app.js
