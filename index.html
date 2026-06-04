@@ -23,7 +23,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=8" />
+  <link rel="stylesheet" href="css/styles.css?v=9" />
 </head>
 <body class="bg-[#f1f3f4] text-ink">
 
@@ -86,26 +86,53 @@
         </div>
       </div>
 
-      <!-- Редактор -->
+      <!-- Редактор (вкладки Edit / Preview) -->
       <div id="editorView" class="flex min-h-0 flex-1 flex-col" hidden>
-        <div class="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3">
-          <label class="flex cursor-pointer items-center gap-2 text-[13px]">
-            <input type="checkbox" id="snapToggle" class="h-4 w-4 accent-ink" /> Snap to grid
-          </label>
-          <button id="copyCoordsBtn" class="rounded-md border border-line px-3 py-1.5 text-[13px] transition hover:bg-gray-50">📋 Copy coordinates</button>
-          <button id="clearCustomBtn" class="rounded-md border border-line px-3 py-1.5 text-[13px] transition hover:bg-gray-50">↺ Reset</button>
-          <span class="ml-auto text-[12px] text-sub">Drag prizes to position them</span>
-        </div>
-
-        <div class="min-h-0 flex-1 overflow-auto p-5">
-          <div id="editorBoard" class="ed-board"></div>
-        </div>
-
-        <div class="flex items-center justify-between gap-3 border-t border-line px-5 py-4">
-          <div class="flex items-center gap-2">
-            <button id="backBtn" class="rounded-md px-4 py-2 text-sm text-sub transition hover:text-ink">← Back</button>
-            <button id="editorPreviewBtn" class="rounded-md border border-line px-3 py-2 text-sm transition hover:bg-gray-50">👁 Preview</button>
+        <!-- перемикач Edit / Preview -->
+        <div class="flex items-center border-b border-line px-5 py-3">
+          <div class="inline-flex rounded-md bg-gray-100 p-0.5 ring-1 ring-line">
+            <button id="tabEdit" class="ws-tab rounded px-3 py-1 text-[13px]">✏️ Edit layout</button>
+            <button id="tabPreview" class="ws-tab rounded px-3 py-1 text-[13px]">👁 Preview</button>
           </div>
+        </div>
+
+        <!-- пейн редагування -->
+        <div id="editPane" class="flex min-h-0 flex-1 flex-col">
+          <div class="flex flex-wrap items-center gap-4 border-b border-line px-5 py-2.5">
+            <label class="flex cursor-pointer items-center gap-2 text-[13px]">
+              <input type="checkbox" id="snapToggle" class="h-4 w-4 accent-ink" /> Snap to grid
+            </label>
+            <button id="copyCoordsBtn" class="rounded-md border border-line px-3 py-1.5 text-[13px] transition hover:bg-gray-50">📋 Copy coordinates</button>
+            <button id="clearCustomBtn" class="rounded-md border border-line px-3 py-1.5 text-[13px] transition hover:bg-gray-50">↺ Reset</button>
+            <span class="ml-auto text-[12px] text-sub">Drag prizes to position them</span>
+          </div>
+          <div class="min-h-0 flex-1 overflow-auto p-5">
+            <div id="editorBoard" class="ed-board"></div>
+          </div>
+        </div>
+
+        <!-- пейн прев'ю (того ж драфта) -->
+        <div id="edPreviewPane" class="flex min-h-0 flex-1 flex-col" hidden>
+          <div class="flex items-center gap-3 border-b border-line px-5 py-2.5">
+            <div class="inline-flex rounded-md bg-gray-100 p-0.5 ring-1 ring-line">
+              <button data-edevice="desktop" class="ed-pv-tab rounded px-3 py-1 text-[13px]">🖥 Desktop</button>
+              <button data-edevice="mobile" class="ed-pv-tab rounded px-3 py-1 text-[13px]">📱 Mobile</button>
+            </div>
+            <span id="edPreviewLabel" class="ml-auto text-[12px] text-sub"></span>
+          </div>
+          <div class="min-h-0 flex-1 overflow-auto bg-[#f1f3f4] p-6">
+            <div id="edDeviceWrap" class="device device--desktop mx-auto w-fit">
+              <div class="device-frame">
+                <div class="device-bar"></div>
+                <div class="pv-screen"><div id="edPreviewBoard"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- футер -->
+        <div class="flex items-center justify-between gap-3 border-t border-line px-5 py-4">
+          <button id="backBtn" class="rounded-md px-4 py-2 text-sm text-sub transition hover:text-ink">← Back</button>
           <button id="saveOwnBtn"
             class="rounded-md bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primaryDark">
             Save layout
@@ -139,7 +166,7 @@
     </div>
   </div>
 
-  <script src="js/data.js?v=8"></script>
-  <script src="js/app.js?v=8"></script>
+  <script src="js/data.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
 </body>
 </html>

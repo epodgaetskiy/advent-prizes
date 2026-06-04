@@ -30,9 +30,18 @@
   const clearCustomBtn = document.getElementById('clearCustomBtn');
   const backBtn = document.getElementById('backBtn');
   const saveOwnBtn = document.getElementById('saveOwnBtn');
-  const editorPreviewBtn = document.getElementById('editorPreviewBtn');
 
-  // DOM — прев'ю
+  // DOM — вкладки редактора Edit / Preview
+  const tabEdit = document.getElementById('tabEdit');
+  const tabPreview = document.getElementById('tabPreview');
+  const editPane = document.getElementById('editPane');
+  const edPreviewPane = document.getElementById('edPreviewPane');
+  const edPreviewBoard = document.getElementById('edPreviewBoard');
+  const edDeviceWrap = document.getElementById('edDeviceWrap');
+  const edPreviewLabel = document.getElementById('edPreviewLabel');
+  const edPvTabs = Array.from(document.querySelectorAll('.ed-pv-tab'));
+
+  // DOM — окреме прев'ю (з інлайну)
   const previewBtn = document.getElementById('previewBtn');
   const previewView = document.getElementById('previewView');
   const previewBoard = document.getElementById('previewBoard');
@@ -156,7 +165,32 @@
     if (headingText) editorHeading = headingText;
     modalHeading.textContent = editorHeading;
     snapToggle.checked = snap;
+    showEditPane(); // завжди стартуємо з редагування
+  }
+
+  function setWsTab(which) {
+    [[tabEdit, which === 'edit'], [tabPreview, which === 'preview']].forEach(([t, on]) => {
+      t.classList.toggle('bg-white', on);
+      t.classList.toggle('shadow-sm', on);
+      t.classList.toggle('text-ink', on);
+      t.classList.toggle('text-sub', !on);
+    });
+  }
+  function showEditPane() {
+    editPane.hidden = false;
+    edPreviewPane.hidden = true;
+    setWsTab('edit');
     renderEditor();
+  }
+  function showEditPreview() {
+    editPane.hidden = true;
+    edPreviewPane.hidden = false;
+    setWsTab('preview');
+    renderEditorPreview();
+  }
+  function renderEditorPreview() {
+    renderPreviewInto(edPreviewBoard, edDeviceWrap, edPreviewLabel, edPvTabs, 'edevice',
+      { id: 'custom', name: 'Custom', type: 'free', positions: draft });
   }
 
   /* ---------- Прев'ю Desktop / Mobile ---------- */
@@ -177,17 +211,18 @@
     return el;
   }
   function renderPreview() {
-    deviceWrap.className = 'device mx-auto w-fit device--' + device;
-    pvTabs.forEach((t) => {
-      const on = t.dataset.device === device;
+    renderPreviewInto(previewBoard, deviceWrap, previewLabel, pvTabs, 'device', previewLayout);
+  }
+  function renderPreviewInto(el, wrapEl, labelEl, tabs, tabAttr, layout) {
+    wrapEl.className = 'device mx-auto w-fit device--' + device;
+    tabs.forEach((t) => {
+      const on = t.dataset[tabAttr] === device;
       t.classList.toggle('bg-white', on);
       t.classList.toggle('shadow-sm', on);
       t.classList.toggle('text-ink', on);
       t.classList.toggle('text-sub', !on);
     });
 
-    const layout = previewLayout;
-    const el = previewBoard;
     el.className = '';
     el.removeAttribute('style');
     const w = el.clientWidth || (device === 'mobile' ? 228 : 500);
@@ -221,7 +256,7 @@
         el.appendChild(c);
       });
     }
-    previewLabel.textContent = (device === 'mobile' ? 'Mobile' : 'Desktop') + ' · ' + layout.name;
+    labelEl.textContent = (device === 'mobile' ? 'Mobile' : 'Desktop') + ' · ' + layout.name;
   }
   function currentSelectionLayout() {
     return kind === 'grid' ? GRID : selectedMapLayout();
@@ -349,13 +384,15 @@
   backBtn.addEventListener('click', showGallery);
   saveOwnBtn.addEventListener('click', saveOwn);
 
-  // Прев'ю
+  // Вкладки редактора Edit / Preview
+  tabEdit.addEventListener('click', showEditPane);
+  tabPreview.addEventListener('click', showEditPreview);
+  edPvTabs.forEach((t) => t.addEventListener('click', () => { device = t.dataset.edevice; renderEditorPreview(); }));
+
+  // Окреме прев'ю (з інлайну)
   previewBtn.addEventListener('click', () => showPreview(currentSelectionLayout(), 'inline'));
-  editorPreviewBtn.addEventListener('click', () =>
-    showPreview({ id: 'custom', name: 'Custom', type: 'free', positions: draft }, 'editor'));
   previewBackBtn.addEventListener('click', () => {
-    if (previewFrom === 'editor') showEditor();
-    else if (previewFrom === 'gallery') showGallery();
+    if (previewFrom === 'gallery') showGallery();
     else closeModal();
   });
   pvTabs.forEach((t) => t.addEventListener('click', () => { device = t.dataset.device; renderPreview(); }));
