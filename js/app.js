@@ -361,10 +361,16 @@
   });
 
   resetBtn.addEventListener('click', () => {
-    if (!confirm('Скинути всі відкриті віконця?')) return;
+    if (opened.size === 0) { toast('Немає відкритих віконець 🤷'); return; }
+    // confirm може бути заблокований у деяких браузерах — тоді просто скидаємо
+    let ok = true;
+    try { ok = window.confirm('Скинути всі відкриті віконця?'); } catch (_) { ok = true; }
+    if (!ok) return;
     opened = new Set();
     saveOpened();
+    closeModal();
     renderBoard();
+    toast('Прогрес скинуто 🔄');
   });
 
   let resizeRAF = null;
