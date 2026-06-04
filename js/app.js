@@ -332,6 +332,7 @@
     });
     const layout = previewLayout;
     const el = previewBoard;
+    el.innerHTML = ''; // прибрати клітинки попереднього патерну
     el.className = '';
     el.removeAttribute('style');
     const w = el.clientWidth || (device === 'mobile' ? 228 : 500);
@@ -417,7 +418,7 @@
   pvTabs.forEach((t) => t.addEventListener('click', () => { device = t.dataset.device; renderPreview(); }));
 
   /* ---------- Старт ---------- */
-  if (!isValidSelection()) pattern = PATTERNS[0].id;
+  if (!isValidSelection()) { pattern = PATTERNS[0].id; saveState(); } // підчистити старий патерн (wave/scatter)
   working = pattern;
   renderInline();
 })();
