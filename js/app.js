@@ -1,25 +1,35 @@
 (function () {
   'use strict';
 
-  const { PRIZES, LAYOUTS: PRESETS } = window.AdventData;
-  const STORAGE_OPENED = 'advent.opened';
-  const STORAGE_LAYOUT = 'advent.layout';
-  const STORAGE_MODE = 'advent.mode';
-  const STORAGE_CUSTOM = 'advent.custom';
-  const STORAGE_SNAP = 'advent.snap';
-  const CUSTOM_ID = 'custom';
+  const { PRIZES, GRID, PATTERNS } = window.AdventData;
 
+  const K = {
+    opened: 'advent.opened',
+    kind: 'advent.kind',       // 'grid' | 'map'
+    pattern: 'advent.pattern', // id патерну або 'custom'
+    edit: 'advent.edit',       // '1' | '0'
+    custom: 'advent.custom',
+    snap: 'advent.snap',
+  };
+
+  // DOM
   const board = document.getElementById('board');
-  const layoutControls = document.getElementById('layoutControls');
+  const radios = Array.from(document.querySelectorAll('input[name="kind"]'));
+  const patternBtn = document.getElementById('patternBtn');
+  const patternName = document.getElementById('patternName');
+  const editBtn = document.getElementById('editBtn');
   const resetBtn = document.getElementById('resetBtn');
-  const modeToggle = document.getElementById('modeToggle');
   const editbar = document.getElementById('editbar');
   const snapToggle = document.getElementById('snapToggle');
   const copyCoordsBtn = document.getElementById('copyCoordsBtn');
   const clearCustomBtn = document.getElementById('clearCustomBtn');
+  const doneEditBtn = document.getElementById('doneEditBtn');
 
-  // Модалка
-  const modal = document.getElementById('modal');
+  const patternModal = document.getElementById('patternModal');
+  const patternGrid = document.getElementById('patternGrid');
+  const createOwnBtn = document.getElementById('createOwnBtn');
+
+  const prizeModal = document.getElementById('prizeModal');
   const modalDay = document.getElementById('modalDay');
   const modalImg = document.getElementById('modalImg');
   const modalTitle = document.getElementById('modalTitle');
@@ -27,36 +37,31 @@
 
   // Стан
   let opened = loadOpened();
-  let mode = localStorage.getItem(STORAGE_MODE) === 'edit' ? 'edit' : 'view';
-  let snap = localStorage.getItem(STORAGE_SNAP) === '1';
+  let kind = localStorage.getItem(K.kind) === 'map' ? 'map' : 'grid';
+  let pattern = localStorage.getItem(K.pattern) || PATTERNS[0].id;
   let customPositions = loadCustom();
-  let currentLayoutId = loadLayoutId();
+  let snap = localStorage.getItem(K.snap) === '1';
+  let edit = localStorage.getItem(K.edit) === '1' && kind === 'map' && pattern === 'custom';
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   /* ---------- Збереження ---------- */
   function loadOpened() {
-    try { return new Set(JSON.parse(localStorage.getItem(STORAGE_OPENED) || '[]')); }
+    try { return new Set(JSON.parse(localStorage.getItem(K.opened) || '[]')); }
     catch (_) { return new Set(); }
   }
-  function saveOpened() {
-    localStorage.setItem(STORAGE_OPENED, JSON.stringify([...opened]));
-  }
+  function saveOpened() { localStorage.setItem(K.opened, JSON.stringify([...opened])); }
   function loadCustom() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_CUSTOM)) || null; }
-    catch (_) { return null; }
+    try { return JSON.parse(localStorage.getItem(K.custom)) || null; } catch (_) { return null; }
   }
-  function saveCustom() {
-    localStorage.setItem(STORAGE_CUSTOM, JSON.stringify(customPositions));
-  }
-  function loadLayoutId() {
-    const saved = localStorage.getItem(STORAGE_LAYOUT);
-    if (saved === CUSTOM_ID) return CUSTOM_ID;
-    return PRESETS.find((l) => l.id === saved) ? saved : PRESETS[0].id;
+  function saveCustom() { localStorage.setItem(K.custom, JSON.stringify(customPositions)); }
+  function saveState() {
+    localStorage.setItem(K.kind, kind);
+    localStorage.setItem(K.pattern, pattern);
+    localStorage.setItem(K.edit, edit ? '1' : '0');
   }
 
   /* ---------- Лейаути ---------- */
-  // Рівна сітка → вільні координати (центри клітинок у %)
   function gridSeed(cols) {
     const rows = Math.ceil(PRIZES.length / cols);
     const pos = {};
@@ -69,9 +74,8 @@
     });
     return pos;
   }
-
-  // Будь-який лейаут → вільні координати (для «засіювання» мого лейауту)
   function seedFrom(layout) {
+    if (!layout) return gridSeed(6);
     if (layout.type === 'free') {
       const o = {};
       Object.keys(layout.positions).forEach((d) => { o[d] = { ...layout.positions[d] }; });
@@ -89,172 +93,139 @@
     });
     return pos;
   }
-
   function customLayout() {
-    return {
-      id: CUSTOM_ID,
-      name: '✏️ Мій лейаут',
-      type: 'free',
-      positions: customPositions || gridSeed(6),
-    };
+    return { id: 'custom', name: 'Мій лейаут', type: 'free', positions: customPositions || gridSeed(6) };
   }
-  function getLayout(id) {
-    if (id === CUSTOM_ID) return customLayout();
-    return PRESETS.find((l) => l.id === id) || PRESETS[0];
-  }
-  function allLayouts() {
-    return [...PRESETS, customLayout()];
+  function patternById(id) { return PATTERNS.find((p) => p.id === id); }
+  function activeLayout() {
+    if (kind === 'grid') return GRID;
+    if (pattern === 'custom') return customLayout();
+    return patternById(pattern) || PATTERNS[0];
   }
 
-  /* ---------- «Сьогодні» (під час адвенту в грудні) ---------- */
+  /* ---------- «Сьогодні» (адвент у грудні) ---------- */
   function todayDay() {
     const now = new Date();
     if (now.getMonth() === 11 && now.getDate() >= 1 && now.getDate() <= 24) return now.getDate();
     return null;
   }
 
-  /* ---------- Перемикання режиму ---------- */
-  function setMode(next) {
-    if (next === 'edit') {
-      // Якщо зараз обрано готовий пресет — «форкаємо» його у мій лейаут
-      if (currentLayoutId !== CUSTOM_ID) {
-        customPositions = seedFrom(getLayout(currentLayoutId));
-        saveCustom();
-        currentLayoutId = CUSTOM_ID;
-        localStorage.setItem(STORAGE_LAYOUT, CUSTOM_ID);
-      } else if (!customPositions) {
-        customPositions = gridSeed(6);
-        saveCustom();
-      }
-    }
-    mode = next;
-    localStorage.setItem(STORAGE_MODE, next);
-    renderControls();
-    renderBoard();
-  }
-
-  /* ---------- Кнопки керування ---------- */
-  function renderControls() {
-    layoutControls.innerHTML = '';
-    allLayouts().forEach((layout) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn' + (layout.id === currentLayoutId ? ' is-active' : '');
-      btn.textContent = layout.name;
-      btn.addEventListener('click', () => onPickLayout(layout));
-      layoutControls.appendChild(btn);
+  /* ---------- Прев'ю патерну (SVG з крапками) ---------- */
+  function patternPreview(layout) {
+    const w = 104, h = 68;
+    let dots = '';
+    PRIZES.forEach((p) => {
+      const pos = layout.positions[p.day];
+      if (!pos) return;
+      const cx = (pos.x / 100) * w;
+      const cy = (pos.y / 100) * h;
+      dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.2" fill="currentColor" />`;
     });
-
-    modeToggle.textContent = mode === 'edit' ? '👁 Перегляд' : '✏️ Редагувати';
-    modeToggle.classList.toggle('is-active', mode === 'edit');
-    editbar.hidden = mode !== 'edit';
-    snapToggle.checked = snap;
+    return `<svg viewBox="0 0 ${w} ${h}" class="h-full w-full">${dots}</svg>`;
   }
 
-  function onPickLayout(layout) {
-    if (mode === 'edit' && layout.id !== CUSTOM_ID) {
-      // У режимі редагування пресет = «взяти за основу»
-      if (!confirm(`Взяти розкладку «${layout.name}» за основу? Поточний мій лейаут буде замінено.`)) return;
-      customPositions = seedFrom(layout);
-      saveCustom();
-      currentLayoutId = CUSTOM_ID;
-    } else {
-      currentLayoutId = layout.id;
+  /* ---------- Рендер контролів ---------- */
+  function render() {
+    radios.forEach((r) => { r.checked = (r.value === kind); });
+
+    const isMap = kind === 'map';
+    const isCustom = isMap && pattern === 'custom';
+    patternBtn.classList.toggle('hidden', !isMap);
+    editBtn.classList.toggle('hidden', !(isCustom && !edit));
+    editbar.style.display = edit ? 'flex' : 'none';
+    snapToggle.checked = snap;
+
+    if (isMap) {
+      patternName.textContent = isCustom ? 'Мій лейаут' : (patternById(pattern) ? patternById(pattern).name : '—');
     }
-    localStorage.setItem(STORAGE_LAYOUT, currentLayoutId);
-    renderControls();
     renderBoard();
   }
 
-  /* ---------- Клітинки ---------- */
-  function createCell(prize) {
-    const cell = document.createElement('button');
-    cell.type = 'button';
-    cell.className = 'cell';
-    cell.dataset.day = prize.day;
-    cell.setAttribute('aria-label', `День ${prize.day}`);
-    if (opened.has(prize.day)) cell.classList.add('is-open');
-    if (todayDay() === prize.day) cell.classList.add('is-today');
-
-    cell.innerHTML = `
-      <div class="cell__inner">
-        <div class="cell__face cell__front"><span class="cell__num">${prize.day}</span></div>
-        <div class="cell__face cell__back"><img src="${prize.image}" alt="${prize.title}" loading="lazy" /></div>
-      </div>
-      <span class="cell__coord"></span>`;
-
-    cell.addEventListener('click', () => { if (mode !== 'edit') onOpen(prize, cell); });
-    return cell;
-  }
-
+  /* ---------- Рендер поля ---------- */
   function renderBoard() {
     board.innerHTML = '';
-    const layout = getLayout(currentLayoutId);
+    const layout = activeLayout();
     const isGrid = layout.type === 'grid';
 
-    board.className = 'board ' + (isGrid ? 'board--grid' : 'board--free')
+    board.className = 'board ' + (isGrid ? 'board--grid' : 'board--map')
       + (layout.long ? ' board--long' : '')
-      + (mode === 'edit' ? ' is-edit' : '');
-
-    // Довга стрічка: явно задаємо висоту поля більшу за екран → з'являється прокрутка
-    if (layout.long) {
-      board.style.height = Math.max(PRIZES.length * 120, window.innerHeight * 2.2) + 'px';
-    } else {
-      board.style.height = '';
-    }
+      + (edit ? ' is-edit' : '');
 
     if (isGrid) {
-      board.style.setProperty('--cols', layout.cols || 6);
+      const cols = layout.cols || 6;
+      board.style.display = 'grid';
+      board.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+      board.style.gap = '12px';
+      board.style.height = '';
       const sorted = [...PRIZES].sort((a, b) => {
         const pa = layout.positions[a.day], pb = layout.positions[b.day];
         return pa.row - pb.row || pa.col - pb.col;
       });
-      sorted.forEach((prize) => board.appendChild(createCell(prize)));
+      sorted.forEach((prize) => board.appendChild(createCell(prize, true)));
     } else {
+      board.style.display = 'block';
+      board.style.gridTemplateColumns = '';
+      board.style.gap = '';
+      board.style.height = layout.long
+        ? Math.max(PRIZES.length * 120, window.innerHeight * 2.2) + 'px'
+        : '';
       PRIZES.forEach((prize) => {
         const pos = layout.positions[prize.day];
         if (!pos) return;
-        const cell = createCell(prize);
+        const cell = createCell(prize, false);
         cell.style.setProperty('--x', pos.x + '%');
         cell.style.setProperty('--y', pos.y + '%');
-        const badge = cell.querySelector('.cell__coord');
-        badge.textContent = `${Math.round(pos.x)},${Math.round(pos.y)}`;
+        cell.querySelector('.cell__coord').textContent = `${Math.round(pos.x)},${Math.round(pos.y)}`;
         board.appendChild(cell);
       });
-      sizeFreeCells();
+      sizeMapCells();
     }
   }
 
-  /* Розмір клітинок у вільному режимі — масштабується під ширину поля */
-  function sizeFreeCells() {
-    if (getLayout(currentLayoutId).type !== 'free') return;
+  function createCell(prize, isGrid) {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cell group' + (isGrid ? ' aspect-square w-full' : '');
+    cell.dataset.day = prize.day;
+    cell.setAttribute('aria-label', `День ${prize.day}`);
+    if (opened.has(prize.day)) cell.classList.add('is-open');
+
+    const todayRing = todayDay() === prize.day ? ' ring-2 ring-amber-400' : ' ring-1 ring-white/10';
+    cell.innerHTML = `
+      <div class="cell__inner shadow-lg">
+        <div class="cell__face cell__front bg-slate-800 transition group-hover:ring-white/25${todayRing}">
+          <span class="text-2xl font-semibold text-slate-200">${prize.day}</span>
+        </div>
+        <div class="cell__face cell__back bg-slate-100">
+          <img src="${prize.image}" alt="${prize.title}" loading="lazy" class="max-h-[78%] max-w-[78%] object-contain" />
+        </div>
+      </div>
+      <span class="cell__coord absolute left-1/2 -bottom-2 -translate-x-1/2 rounded-full bg-slate-900 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300"></span>`;
+
+    cell.addEventListener('click', () => { if (!edit) openPrize(prize); });
+    return cell;
+  }
+
+  function sizeMapCells() {
+    if (activeLayout().type !== 'free') return;
     const w = board.clientWidth || board.offsetWidth;
-    const size = Math.max(58, Math.min(120, w / 8.5));
+    const size = Math.max(58, Math.min(118, w / 8.5));
     board.style.setProperty('--cell-size', size + 'px');
   }
 
-  /* ---------- Перетягування (режим редагування) ----------
-     Делегування на рівні board + глобальні слухачі move/up,
-     щоб перетягування не «зривалось» при швидкому русі. */
-  let drag = null; // { cell, day, badge, moved }
-
-  function onDragStart(e) {
-    if (mode !== 'edit') return;
+  /* ---------- Перетягування (редагування) ---------- */
+  let drag = null;
+  board.addEventListener('pointerdown', (e) => {
+    if (!edit) return;
     const cell = e.target.closest('.cell');
     if (!cell || !board.contains(cell)) return;
     e.preventDefault();
-    drag = {
-      cell,
-      day: +cell.dataset.day,
-      badge: cell.querySelector('.cell__coord'),
-      moved: false,
-    };
+    drag = { cell, day: +cell.dataset.day, badge: cell.querySelector('.cell__coord'), moved: false };
     cell.classList.add('is-dragging');
     window.addEventListener('pointermove', onDragMove);
     window.addEventListener('pointerup', onDragEnd);
     window.addEventListener('pointercancel', onDragEnd);
-  }
-
+  });
   function onDragMove(e) {
     if (!drag) return;
     const rect = board.getBoundingClientRect();
@@ -268,7 +239,6 @@
     customPositions[drag.day] = { x, y };
     if (drag.badge) drag.badge.textContent = `${Math.round(x)},${Math.round(y)}`;
   }
-
   function onDragEnd() {
     if (!drag) return;
     drag.cell.classList.remove('is-dragging');
@@ -279,34 +249,82 @@
     window.removeEventListener('pointercancel', onDragEnd);
   }
 
-  board.addEventListener('pointerdown', onDragStart);
-
-  /* ---------- Відкриття призу (режим перегляду) ---------- */
-  let modalTimer = null;
-  function onOpen(prize, cell) {
+  /* ---------- Модалка призу ---------- */
+  let prizeTimer = null;
+  function openPrize(prize) {
     const firstTime = !opened.has(prize.day);
     opened.add(prize.day);
     saveOpened();
-    cell.classList.add('is-open');
-    clearTimeout(modalTimer);
-    modalTimer = setTimeout(() => showModal(prize), firstTime ? 420 : 120);
+    const cell = board.querySelector(`.cell[data-day="${prize.day}"]`);
+    if (cell) cell.classList.add('is-open');
+    clearTimeout(prizeTimer);
+    prizeTimer = setTimeout(() => showPrize(prize), firstTime ? 420 : 120);
   }
-
-  function showModal(prize) {
+  function showPrize(prize) {
     modalDay.textContent = `День ${prize.day}`;
     modalImg.src = prize.image;
     modalImg.alt = prize.title;
     modalTitle.textContent = prize.title;
     modalDesc.textContent = prize.description || '';
-    modal.hidden = false;
-    document.body.style.overflow = 'hidden';
+    openModal(prizeModal);
   }
-  function closeModal() {
-    modal.hidden = true;
-    document.body.style.overflow = '';
+
+  /* ---------- Модалки (загальне) ---------- */
+  function openModal(el) { el.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  function closeModal(el) { el.style.display = 'none'; document.body.style.overflow = ''; }
+
+  prizeModal.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close-prize')) closeModal(prizeModal); });
+  patternModal.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close-pattern')) closeModal(patternModal); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (prizeModal.style.display === 'flex') closeModal(prizeModal);
+    else if (patternModal.style.display === 'flex') closeModal(patternModal);
+  });
+
+  /* ---------- Модалка вибору патерну ---------- */
+  function openPatternModal() {
+    patternGrid.innerHTML = '';
+
+    PATTERNS.forEach((p) => {
+      patternGrid.appendChild(patternCard(p.name, p, pattern === p.id, () => choosePattern(p.id)));
+    });
+    if (customPositions) {
+      patternGrid.appendChild(patternCard('✏️ Мій лейаут', customLayout(), pattern === 'custom', () => choosePattern('custom')));
+    }
+    openModal(patternModal);
   }
-  modal.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close')) closeModal(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+  function patternCard(label, layout, active, onClick) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'group flex flex-col items-center gap-2 rounded-xl bg-slate-800 p-3 ring-1 transition hover:ring-amber-400/60 '
+      + (active ? 'ring-amber-400' : 'ring-white/10');
+    card.innerHTML = `<div class="h-16 w-full text-slate-500 transition group-hover:text-amber-300">${patternPreview(layout)}</div>
+      <span class="text-xs text-slate-300">${label}</span>`;
+    card.addEventListener('click', onClick);
+    return card;
+  }
+  function choosePattern(id) {
+    kind = 'map';
+    pattern = id;
+    edit = false;
+    saveState();
+    closeModal(patternModal);
+    render();
+  }
+  function startOwn() {
+    if (!customPositions) {
+      const src = (pattern && pattern !== 'custom') ? (patternById(pattern) || GRID) : GRID;
+      customPositions = seedFrom(src);
+      saveCustom();
+    }
+    kind = 'map';
+    pattern = 'custom';
+    edit = true;
+    saveState();
+    closeModal(patternModal);
+    render();
+    toast('Перетягуй призи, щоб розставити ✏️');
+  }
 
   /* ---------- Тост ---------- */
   let toastTimer = null;
@@ -315,60 +333,64 @@
     if (!el) {
       el = document.createElement('div');
       el.id = 'toast';
-      el.className = 'toast';
+      el.className = 'pointer-events-none fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 translate-y-3 rounded-xl bg-slate-800 px-4 py-2 text-sm text-slate-100 opacity-0 shadow-2xl ring-1 ring-white/10 transition-all duration-200';
       document.body.appendChild(el);
     }
     el.textContent = msg;
-    el.classList.add('is-on');
+    requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-3'));
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('is-on'), 2200);
+    toastTimer = setTimeout(() => el.classList.add('opacity-0', 'translate-y-3'), 2200);
   }
 
-  /* ---------- Дії панелі редагування ---------- */
+  /* ---------- Дії ---------- */
   function copyCoords() {
     const pos = customPositions || gridSeed(6);
-    const lines = PRIZES.map((p) => {
-      const c = pos[p.day];
-      return `      ${p.day}: { x: ${c.x}, y: ${c.y} },`;
-    }).join('\n');
+    const lines = PRIZES.map((p) => `      ${p.day}: { x: ${pos[p.day].x}, y: ${pos[p.day].y} },`).join('\n');
     const text = `{\n  id: 'custom',\n  name: 'Мій лейаут',\n  type: 'free',\n  positions: {\n${lines}\n  },\n}`;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(
-        () => toast('Координати скопійовано в буфер 📋'),
-        () => window.prompt('Скопіюй координати (Ctrl/Cmd+C):', text)
+        () => toast('Координати скопійовано 📋'),
+        () => window.prompt('Скопіюй координати:', text)
       );
     } else {
-      window.prompt('Скопіюй координати (Ctrl/Cmd+C):', text);
+      window.prompt('Скопіюй координати:', text);
     }
   }
 
-  /* ---------- Слухачі панелей ---------- */
-  modeToggle.addEventListener('click', () => setMode(mode === 'edit' ? 'view' : 'edit'));
+  /* ---------- Слухачі ---------- */
+  radios.forEach((r) => r.addEventListener('change', () => {
+    if (r.value === 'grid') { kind = 'grid'; edit = false; saveState(); render(); }
+    else { kind = 'map'; saveState(); render(); openPatternModal(); }
+  }));
+
+  patternBtn.addEventListener('click', openPatternModal);
+  createOwnBtn.addEventListener('click', startOwn);
+  editBtn.addEventListener('click', () => {
+    if (!customPositions) { customPositions = seedFrom(GRID); saveCustom(); }
+    edit = true; saveState(); render();
+  });
+  doneEditBtn.addEventListener('click', () => { edit = false; saveState(); render(); toast('Готово ✓'); });
 
   snapToggle.addEventListener('change', () => {
     snap = snapToggle.checked;
-    localStorage.setItem(STORAGE_SNAP, snap ? '1' : '0');
+    localStorage.setItem(K.snap, snap ? '1' : '0');
   });
-
   copyCoordsBtn.addEventListener('click', copyCoords);
-
   clearCustomBtn.addEventListener('click', () => {
-    if (!confirm('Очистити мій лейаут і вирівняти призи в сітку?')) return;
     customPositions = gridSeed(6);
     saveCustom();
     renderBoard();
-    toast('Мій лейаут вирівняно в сітку');
+    toast('Вирівняно в сітку');
   });
 
   resetBtn.addEventListener('click', () => {
     if (opened.size === 0) { toast('Немає відкритих віконець 🤷'); return; }
-    // confirm може бути заблокований у деяких браузерах — тоді просто скидаємо
     let ok = true;
     try { ok = window.confirm('Скинути всі відкриті віконця?'); } catch (_) { ok = true; }
     if (!ok) return;
     opened = new Set();
     saveOpened();
-    closeModal();
+    closeModal(prizeModal);
     renderBoard();
     toast('Прогрес скинуто 🔄');
   });
@@ -377,20 +399,12 @@
   window.addEventListener('resize', () => {
     cancelAnimationFrame(resizeRAF);
     resizeRAF = requestAnimationFrame(() => {
-      const layout = getLayout(currentLayoutId);
-      if (layout.long) {
-        board.style.height = Math.max(PRIZES.length * 120, window.innerHeight * 2.2) + 'px';
-      }
-      sizeFreeCells();
+      const layout = activeLayout();
+      if (layout.long) board.style.height = Math.max(PRIZES.length * 120, window.innerHeight * 2.2) + 'px';
+      sizeMapCells();
     });
   });
 
   /* ---------- Старт ---------- */
-  // У режимі редагування завжди працюємо з «моїм лейаутом»
-  if (mode === 'edit') {
-    currentLayoutId = CUSTOM_ID;
-    if (!customPositions) { customPositions = gridSeed(6); saveCustom(); }
-  }
-  renderControls();
-  renderBoard();
+  render();
 })();

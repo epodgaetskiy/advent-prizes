@@ -160,4 +160,6 @@ const LAYOUTS = [
 ];
 
 // Доступ із app.js
-window.AdventData = { PRIZES, LAYOUTS };
+const GRID = LAYOUTS.find((l) => l.id === 'grid');
+const PATTERNS = LAYOUTS.filter((l) => l.type === 'free');
+window.AdventData = { PRIZES, GRID, PATTERNS };

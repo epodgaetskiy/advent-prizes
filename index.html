@@ -3,58 +3,99 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Адвент-календар із призами та різними варіантами розкладки" />
-  <title>🎁 Адвент-календар</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="css/styles.css?v=5" />
+  <meta name="description" content="Адвент-календар із призами: режими Сітка / Мапа з патернами" />
+  <title>Адвент-календар</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {} } };
+  </script>
+  <link rel="stylesheet" href="css/styles.css?v=6" />
 </head>
-<body>
-  <header class="header">
-    <h1 class="header__title">🎁 Адвент-календар</h1>
-    <p class="header__subtitle">Відкривай по одному віконцю щодня</p>
+<body class="flex min-h-screen flex-col bg-slate-950 text-slate-100">
 
-    <div class="controls">
-      <div class="controls__group" id="layoutControls" role="group" aria-label="Варіанти розкладки">
-        <!-- кнопки варіантів генеруються в app.js -->
+  <!-- Шапка (липка) -->
+  <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-900/80 backdrop-blur">
+    <div class="mx-auto max-w-5xl px-4 py-3">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-lg font-semibold tracking-tight">Адвент-календар</h1>
+          <p class="text-xs text-slate-400">Відкривай по віконцю щодня</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Радіо: Сітка / Мапа -->
+          <div class="inline-flex rounded-xl bg-slate-800 p-1 ring-1 ring-white/10">
+            <label>
+              <input type="radio" name="kind" value="grid" class="peer sr-only" />
+              <span class="block cursor-pointer rounded-lg px-4 py-1.5 text-sm text-slate-300 transition peer-checked:bg-slate-100 peer-checked:text-slate-900">▦ Сітка</span>
+            </label>
+            <label>
+              <input type="radio" name="kind" value="map" class="peer sr-only" />
+              <span class="block cursor-pointer rounded-lg px-4 py-1.5 text-sm text-slate-300 transition peer-checked:bg-slate-100 peer-checked:text-slate-900">🗺 Мапа</span>
+            </label>
+          </div>
+
+          <button id="patternBtn" class="hidden rounded-lg px-3 py-1.5 text-sm text-slate-200 ring-1 ring-white/15 transition hover:bg-white/5">
+            Патерн: <span id="patternName" class="text-slate-400">—</span>
+          </button>
+          <button id="editBtn" class="hidden rounded-lg px-3 py-1.5 text-sm text-slate-200 ring-1 ring-white/15 transition hover:bg-white/5">✏️ Редагувати</button>
+          <button id="resetBtn" class="rounded-lg px-3 py-1.5 text-sm text-slate-400 transition hover:text-slate-200">↺ Скинути</button>
+        </div>
       </div>
-      <button class="btn" id="modeToggle" type="button">✏️ Редагувати</button>
-      <button class="btn btn--ghost" id="resetBtn" type="button">↺ Скинути прогрес</button>
-    </div>
 
-    <div class="editbar" id="editbar" hidden>
-      <span class="editbar__hint">✏️ Перетягуй призи, щоб розставити. Координати зберігаються автоматично. Кнопки розкладок вгорі — взяти за основу.</span>
-      <label class="editbar__snap">
-        <input type="checkbox" id="snapToggle" /> Прив'язка до сітки
-      </label>
-      <button class="btn btn--ghost btn--sm" id="copyCoordsBtn" type="button">📋 Копіювати координати</button>
-      <button class="btn btn--ghost btn--sm" id="clearCustomBtn" type="button">↺ Очистити мій лейаут</button>
+      <!-- Панель редагування -->
+      <div id="editbar" class="mt-3 hidden flex-wrap items-center gap-3 rounded-xl border border-dashed border-amber-400/40 bg-white/5 px-3 py-2">
+        <span class="text-xs text-slate-400">Перетягуй призи — координати зберігаються автоматично.</span>
+        <label class="flex items-center gap-1.5 text-xs text-slate-300">
+          <input id="snapToggle" type="checkbox" class="accent-amber-400" /> Прив'язка до сітки
+        </label>
+        <button id="copyCoordsBtn" class="rounded-md px-2.5 py-1 text-xs text-slate-200 ring-1 ring-white/15 transition hover:bg-white/5">📋 Координати</button>
+        <button id="clearCustomBtn" class="rounded-md px-2.5 py-1 text-xs text-slate-200 ring-1 ring-white/15 transition hover:bg-white/5">↺ Очистити</button>
+        <button id="doneEditBtn" class="ml-auto rounded-md bg-amber-400 px-3 py-1 text-xs font-medium text-slate-900 transition hover:bg-amber-300">✓ Готово</button>
+      </div>
     </div>
   </header>
 
-  <main class="stage" id="stage" aria-label="Поле календаря">
-    <div class="board" id="board">
-      <!-- клітинки генеруються в app.js -->
-    </div>
+  <!-- Поле -->
+  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+    <div id="board" class="board"></div>
   </main>
 
-  <!-- Модалка призу -->
-  <div class="modal" id="modal" hidden>
-    <div class="modal__backdrop" data-close></div>
-    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <button class="modal__close" data-close aria-label="Закрити">✕</button>
-      <div class="modal__day" id="modalDay"></div>
-      <img class="modal__img" id="modalImg" alt="" />
-      <h2 class="modal__title" id="modalTitle"></h2>
-      <p class="modal__desc" id="modalDesc"></p>
+  <!-- Підвал (липкий) -->
+  <footer class="sticky bottom-0 z-40 border-t border-white/10 bg-slate-900/80 px-4 py-2 text-center text-xs text-slate-500 backdrop-blur">
+    Призи та координати — у <code class="rounded bg-white/10 px-1">js/data.js</code>
+  </footer>
+
+  <!-- Модалка вибору патерну -->
+  <div id="patternModal" class="fixed inset-0 z-50 items-center justify-center p-4" style="display:none">
+    <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" data-close-pattern></div>
+    <div class="relative w-full max-w-lg rounded-2xl bg-slate-900 p-5 shadow-2xl ring-1 ring-white/10">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-base font-semibold">Оберіть патерн</h2>
+        <button class="text-slate-400 transition hover:text-slate-200" data-close-pattern aria-label="Закрити">✕</button>
+      </div>
+      <div id="patternGrid" class="grid grid-cols-2 gap-3 sm:grid-cols-3"></div>
+      <div class="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
+        <span class="text-xs text-slate-400">або зроби власне розташування</span>
+        <button id="createOwnBtn" class="rounded-lg bg-amber-400 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-amber-300">✏️ Створити свій</button>
+      </div>
     </div>
   </div>
 
-  <footer class="footer">
-    Зроблено з ❤️ — координати призів і розкладки налаштовуються у <code>js/data.js</code>
-  </footer>
+  <!-- Модалка призу -->
+  <div id="prizeModal" class="fixed inset-0 z-50 items-center justify-center p-4" style="display:none">
+    <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" data-close-prize></div>
+    <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 text-center text-slate-900 shadow-2xl">
+      <button class="absolute right-3 top-3 text-slate-400 transition hover:text-slate-700" data-close-prize aria-label="Закрити">✕</button>
+      <div id="modalDay" class="mb-2 inline-block rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white"></div>
+      <img id="modalImg" class="mx-auto mb-3 h-32 w-32 object-contain" alt="" />
+      <h3 id="modalTitle" class="text-xl font-semibold"></h3>
+      <p id="modalDesc" class="mt-1 text-slate-500"></p>
+    </div>
+  </div>
 
-  <script src="js/data.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/data.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 </html>
