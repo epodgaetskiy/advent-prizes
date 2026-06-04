@@ -210,7 +210,6 @@
         cell.style.setProperty('--y', pos.y + '%');
         const badge = cell.querySelector('.cell__coord');
         badge.textContent = `${Math.round(pos.x)},${Math.round(pos.y)}`;
-        if (mode === 'edit') attachDrag(cell, prize, badge);
         board.appendChild(cell);
       });
       sizeFreeCells();
@@ -225,42 +224,53 @@
     board.style.setProperty('--cell-size', size + 'px');
   }
 
-  /* ---------- Перетягування (режим редагування) ---------- */
-  function attachDrag(cell, prize, badge) {
-    let dragging = false;
-    cell.style.touchAction = 'none';
+  /* ---------- Перетягування (режим редагування) ----------
+     Делегування на рівні board + глобальні слухачі move/up,
+     щоб перетягування не «зривалось» при швидкому русі. */
+  let drag = null; // { cell, day, badge, moved }
 
-    cell.addEventListener('pointerdown', (e) => {
-      if (mode !== 'edit') return;
-      e.preventDefault();
-      dragging = true;
-      cell.classList.add('is-dragging');
-      try { cell.setPointerCapture(e.pointerId); } catch (_) {}
-    });
-
-    cell.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const rect = board.getBoundingClientRect();
-      let x = clamp(((e.clientX - rect.left) / rect.width) * 100, 2, 98);
-      let y = clamp(((e.clientY - rect.top) / rect.height) * 100, 2, 98);
-      if (snap) { const s = 2.5; x = Math.round(x / s) * s; y = Math.round(y / s) * s; }
-      x = +x.toFixed(1); y = +y.toFixed(1);
-      cell.style.setProperty('--x', x + '%');
-      cell.style.setProperty('--y', y + '%');
-      customPositions[prize.day] = { x, y };
-      badge.textContent = `${Math.round(x)},${Math.round(y)}`;
-    });
-
-    const end = (e) => {
-      if (!dragging) return;
-      dragging = false;
-      cell.classList.remove('is-dragging');
-      try { cell.releasePointerCapture(e.pointerId); } catch (_) {}
-      saveCustom();
+  function onDragStart(e) {
+    if (mode !== 'edit') return;
+    const cell = e.target.closest('.cell');
+    if (!cell || !board.contains(cell)) return;
+    e.preventDefault();
+    drag = {
+      cell,
+      day: +cell.dataset.day,
+      badge: cell.querySelector('.cell__coord'),
+      moved: false,
     };
-    cell.addEventListener('pointerup', end);
-    cell.addEventListener('pointercancel', end);
+    cell.classList.add('is-dragging');
+    window.addEventListener('pointermove', onDragMove);
+    window.addEventListener('pointerup', onDragEnd);
+    window.addEventListener('pointercancel', onDragEnd);
   }
+
+  function onDragMove(e) {
+    if (!drag) return;
+    const rect = board.getBoundingClientRect();
+    let x = clamp(((e.clientX - rect.left) / rect.width) * 100, 2, 98);
+    let y = clamp(((e.clientY - rect.top) / rect.height) * 100, 2, 98);
+    if (snap) { const s = 2.5; x = Math.round(x / s) * s; y = Math.round(y / s) * s; }
+    x = +x.toFixed(1); y = +y.toFixed(1);
+    drag.moved = true;
+    drag.cell.style.setProperty('--x', x + '%');
+    drag.cell.style.setProperty('--y', y + '%');
+    customPositions[drag.day] = { x, y };
+    if (drag.badge) drag.badge.textContent = `${Math.round(x)},${Math.round(y)}`;
+  }
+
+  function onDragEnd() {
+    if (!drag) return;
+    drag.cell.classList.remove('is-dragging');
+    if (drag.moved) saveCustom();
+    drag = null;
+    window.removeEventListener('pointermove', onDragMove);
+    window.removeEventListener('pointerup', onDragEnd);
+    window.removeEventListener('pointercancel', onDragEnd);
+  }
+
+  board.addEventListener('pointerdown', onDragStart);
 
   /* ---------- Відкриття призу (режим перегляду) ---------- */
   let modalTimer = null;
