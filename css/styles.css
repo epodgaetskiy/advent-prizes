@@ -1,0 +1,305 @@
+:root {
+  --bg-1: #0b1d3a;
+  --bg-2: #13315c;
+  --accent: #e63946;
+  --accent-2: #ffd166;
+  --gold: #f4c95d;
+  --text: #f5f7fb;
+  --muted: #aebfdc;
+  --cell: #1b3a63;
+  --cell-hi: #25548c;
+  --radius: 16px;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --cell-size: 116px; /* керується JS для вільних розкладок */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #1d4f8c 0%, transparent 60%),
+    linear-gradient(160deg, var(--bg-1), var(--bg-2));
+  background-attachment: fixed;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ---------- Шапка ---------- */
+.header {
+  text-align: center;
+  padding: 24px 16px 8px;
+}
+.header__title {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  letter-spacing: 0.5px;
+}
+.header__subtitle {
+  margin: 6px 0 16px;
+  color: var(--muted);
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+.controls__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.btn {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:hover { background: rgba(255, 255, 255, 0.12); }
+.btn:active { transform: scale(0.96); }
+.btn.is-active {
+  background: var(--accent-2);
+  color: #1a1a1a;
+  border-color: var(--accent-2);
+  font-weight: 600;
+}
+.btn--ghost { opacity: 0.85; }
+
+/* ---------- Поле ---------- */
+.stage {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 18px auto;
+  padding: 0 16px 24px;
+}
+
+.board {
+  position: relative;
+  width: 100%;
+}
+
+/* Режим сітки */
+.board--grid {
+  display: grid;
+  gap: clamp(8px, 1.6vw, 16px);
+  grid-template-columns: repeat(var(--cols, 6), 1fr);
+}
+.board--grid .cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+}
+
+/* Режим вільних координат (x/y у %) */
+.board--free {
+  /* висота задається через aspect-ratio контейнера */
+  aspect-ratio: 16 / 11;
+  min-height: 340px;
+}
+.board--free .cell {
+  position: absolute;
+  width: var(--cell-size);
+  height: var(--cell-size);
+  /* x/y — центр клітинки */
+  left: var(--x);
+  top: var(--y);
+  transform: translate(-50%, -50%);
+}
+
+/* ---------- Клітинка / дверцята ---------- */
+.cell {
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  perspective: 700px;
+  -webkit-tap-highlight-color: transparent;
+}
+.cell__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius);
+  transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d;
+  box-shadow: var(--shadow);
+}
+.cell.is-open .cell__inner {
+  transform: rotateY(180deg);
+}
+
+.cell__face {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+
+/* Лицьова сторона — номер дня */
+.cell__front {
+  background: linear-gradient(155deg, var(--cell), var(--cell-hi));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  flex-direction: column;
+}
+.cell__front::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.18), transparent 45%);
+}
+.cell__num {
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: var(--gold);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
+.cell.is-today .cell__front {
+  outline: 3px solid var(--accent-2);
+  outline-offset: -3px;
+}
+.cell.is-today .cell__num::after {
+  content: " ★";
+  font-size: 0.6em;
+}
+
+/* Зворотна сторона — прев'ю призу */
+.cell__back {
+  transform: rotateY(180deg);
+  background: linear-gradient(155deg, #fff7e6, #ffe3b3);
+  border: 1px solid var(--gold);
+  padding: 8px;
+}
+.cell__back img {
+  max-width: 82%;
+  max-height: 82%;
+  object-fit: contain;
+}
+
+.cell:hover .cell__inner {
+  transform: translateY(-3px);
+}
+.cell.is-open:hover .cell__inner {
+  transform: rotateY(180deg) translateY(-3px);
+}
+
+/* ---------- Модалка ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.modal[hidden] { display: none; }
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 12, 28, 0.72);
+  backdrop-filter: blur(3px);
+}
+.modal__card {
+  position: relative;
+  width: min(92vw, 420px);
+  background: linear-gradient(160deg, #ffffff, #fff4dd);
+  color: #1a1a1a;
+  border-radius: 22px;
+  padding: 28px 24px 30px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: pop 0.3s ease;
+}
+@keyframes pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.modal__day {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+}
+.modal__img {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  margin: 6px auto 12px;
+  display: block;
+}
+.modal__title {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+}
+.modal__desc {
+  margin: 0;
+  color: #555;
+}
+
+/* ---------- Підвал ---------- */
+.footer {
+  text-align: center;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.footer code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/* ---------- Адаптив ---------- */
+@media (max-width: 760px) {
+  .board--grid { grid-template-columns: repeat(4, 1fr) !important; }
+  .board--free { aspect-ratio: 3 / 4; }
+}
+@media (max-width: 420px) {
+  .board--grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell__inner, .btn { transition: none; }
+  .modal__card { animation: none; }
+}
