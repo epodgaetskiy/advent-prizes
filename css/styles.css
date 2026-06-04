@@ -83,6 +83,39 @@ body {
   font-weight: 600;
 }
 .btn--ghost { opacity: 0.85; }
+.btn--sm { padding: 6px 11px; font-size: 0.82rem; }
+
+/* ---------- Панель редагування ---------- */
+.editbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  max-width: 860px;
+  margin: 14px auto 0;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(255, 214, 102, 0.5);
+  border-radius: 14px;
+}
+.editbar[hidden] { display: none; }
+.editbar__hint {
+  flex: 1 1 240px;
+  min-width: 200px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: left;
+}
+.editbar__snap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.editbar__snap input { cursor: pointer; }
 
 /* ---------- Поле ---------- */
 .stage {
@@ -206,6 +239,70 @@ body {
 }
 .cell.is-open:hover .cell__inner {
   transform: rotateY(180deg) translateY(-3px);
+}
+
+/* Координатний бейдж (видно лише в режимі редагування) */
+.cell__coord {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  color: var(--accent-2);
+  font-size: 0.66rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* ---------- Режим редагування ---------- */
+.board.is-edit .cell {
+  cursor: grab;
+  touch-action: none;
+}
+.board.is-edit .cell .cell__inner {
+  transform: none !important; /* у редагуванні завжди показуємо номер, без перевертання */
+  outline: 2px dashed rgba(255, 214, 102, 0.55);
+  outline-offset: -2px;
+}
+.board.is-edit .cell:hover .cell__inner {
+  outline-color: var(--accent-2);
+}
+.board.is-edit .cell__coord { display: block; }
+.board.is-edit .cell.is-dragging {
+  cursor: grabbing;
+  z-index: 10;
+}
+.board.is-edit .cell.is-dragging .cell__inner {
+  transform: scale(1.08) !important;
+  outline-color: var(--accent);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Тост ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translate(-50%, 20px);
+  background: #1a1a1a;
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 100;
+}
+.toast.is-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 /* ---------- Модалка ---------- */

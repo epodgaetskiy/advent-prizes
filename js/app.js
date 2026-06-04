@@ -1,13 +1,22 @@
 (function () {
   'use strict';
 
-  const { PRIZES, LAYOUTS } = window.AdventData;
+  const { PRIZES, LAYOUTS: PRESETS } = window.AdventData;
   const STORAGE_OPENED = 'advent.opened';
   const STORAGE_LAYOUT = 'advent.layout';
+  const STORAGE_MODE = 'advent.mode';
+  const STORAGE_CUSTOM = 'advent.custom';
+  const STORAGE_SNAP = 'advent.snap';
+  const CUSTOM_ID = 'custom';
 
   const board = document.getElementById('board');
   const layoutControls = document.getElementById('layoutControls');
   const resetBtn = document.getElementById('resetBtn');
+  const modeToggle = document.getElementById('modeToggle');
+  const editbar = document.getElementById('editbar');
+  const snapToggle = document.getElementById('snapToggle');
+  const copyCoordsBtn = document.getElementById('copyCoordsBtn');
+  const clearCustomBtn = document.getElementById('clearCustomBtn');
 
   // Модалка
   const modal = document.getElementById('modal');
@@ -18,51 +27,143 @@
 
   // Стан
   let opened = loadOpened();
-  let currentLayout = loadLayout();
+  let mode = localStorage.getItem(STORAGE_MODE) === 'edit' ? 'edit' : 'view';
+  let snap = localStorage.getItem(STORAGE_SNAP) === '1';
+  let customPositions = loadCustom();
+  let currentLayoutId = loadLayoutId();
 
-  const prizeByDay = Object.fromEntries(PRIZES.map((p) => [p.day, p]));
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   /* ---------- Збереження ---------- */
   function loadOpened() {
-    try {
-      return new Set(JSON.parse(localStorage.getItem(STORAGE_OPENED) || '[]'));
-    } catch (_) {
-      return new Set();
-    }
+    try { return new Set(JSON.parse(localStorage.getItem(STORAGE_OPENED) || '[]')); }
+    catch (_) { return new Set(); }
   }
   function saveOpened() {
     localStorage.setItem(STORAGE_OPENED, JSON.stringify([...opened]));
   }
-  function loadLayout() {
+  function loadCustom() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_CUSTOM)) || null; }
+    catch (_) { return null; }
+  }
+  function saveCustom() {
+    localStorage.setItem(STORAGE_CUSTOM, JSON.stringify(customPositions));
+  }
+  function loadLayoutId() {
     const saved = localStorage.getItem(STORAGE_LAYOUT);
-    return LAYOUTS.find((l) => l.id === saved) || LAYOUTS[0];
+    if (saved === CUSTOM_ID) return CUSTOM_ID;
+    return PRESETS.find((l) => l.id === saved) ? saved : PRESETS[0].id;
+  }
+
+  /* ---------- Лейаути ---------- */
+  // Рівна сітка → вільні координати (центри клітинок у %)
+  function gridSeed(cols) {
+    const rows = Math.ceil(PRIZES.length / cols);
+    const pos = {};
+    PRIZES.forEach((p, i) => {
+      const c = i % cols, r = Math.floor(i / cols);
+      pos[p.day] = {
+        x: +(((c + 0.5) / cols) * 100).toFixed(1),
+        y: +(((r + 0.5) / rows) * 100).toFixed(1),
+      };
+    });
+    return pos;
+  }
+
+  // Будь-який лейаут → вільні координати (для «засіювання» мого лейауту)
+  function seedFrom(layout) {
+    if (layout.type === 'free') {
+      const o = {};
+      Object.keys(layout.positions).forEach((d) => { o[d] = { ...layout.positions[d] }; });
+      return o;
+    }
+    const cols = layout.cols || 6;
+    const rows = Math.ceil(PRIZES.length / cols);
+    const pos = {};
+    PRIZES.forEach((p) => {
+      const g = layout.positions[p.day];
+      pos[p.day] = {
+        x: +(((g.col - 0.5) / cols) * 100).toFixed(1),
+        y: +(((g.row - 0.5) / rows) * 100).toFixed(1),
+      };
+    });
+    return pos;
+  }
+
+  function customLayout() {
+    return {
+      id: CUSTOM_ID,
+      name: '✏️ Мій лейаут',
+      type: 'free',
+      positions: customPositions || gridSeed(6),
+    };
+  }
+  function getLayout(id) {
+    if (id === CUSTOM_ID) return customLayout();
+    return PRESETS.find((l) => l.id === id) || PRESETS[0];
+  }
+  function allLayouts() {
+    return [...PRESETS, customLayout()];
   }
 
   /* ---------- «Сьогодні» (під час адвенту в грудні) ---------- */
   function todayDay() {
     const now = new Date();
-    if (now.getMonth() === 11 && now.getDate() >= 1 && now.getDate() <= 24) {
-      return now.getDate();
-    }
+    if (now.getMonth() === 11 && now.getDate() >= 1 && now.getDate() <= 24) return now.getDate();
     return null;
   }
 
-  /* ---------- Кнопки варіантів ---------- */
+  /* ---------- Перемикання режиму ---------- */
+  function setMode(next) {
+    if (next === 'edit') {
+      // Якщо зараз обрано готовий пресет — «форкаємо» його у мій лейаут
+      if (currentLayoutId !== CUSTOM_ID) {
+        customPositions = seedFrom(getLayout(currentLayoutId));
+        saveCustom();
+        currentLayoutId = CUSTOM_ID;
+        localStorage.setItem(STORAGE_LAYOUT, CUSTOM_ID);
+      } else if (!customPositions) {
+        customPositions = gridSeed(6);
+        saveCustom();
+      }
+    }
+    mode = next;
+    localStorage.setItem(STORAGE_MODE, next);
+    renderControls();
+    renderBoard();
+  }
+
+  /* ---------- Кнопки керування ---------- */
   function renderControls() {
     layoutControls.innerHTML = '';
-    LAYOUTS.forEach((layout) => {
+    allLayouts().forEach((layout) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'btn' + (layout.id === currentLayout.id ? ' is-active' : '');
+      btn.className = 'btn' + (layout.id === currentLayoutId ? ' is-active' : '');
       btn.textContent = layout.name;
-      btn.addEventListener('click', () => {
-        currentLayout = layout;
-        localStorage.setItem(STORAGE_LAYOUT, layout.id);
-        renderControls();
-        renderBoard();
-      });
+      btn.addEventListener('click', () => onPickLayout(layout));
       layoutControls.appendChild(btn);
     });
+
+    modeToggle.textContent = mode === 'edit' ? '👁 Перегляд' : '✏️ Редагувати';
+    modeToggle.classList.toggle('is-active', mode === 'edit');
+    editbar.hidden = mode !== 'edit';
+    snapToggle.checked = snap;
+  }
+
+  function onPickLayout(layout) {
+    if (mode === 'edit' && layout.id !== CUSTOM_ID) {
+      // У режимі редагування пресет = «взяти за основу»
+      if (!confirm(`Взяти розкладку «${layout.name}» за основу? Поточний мій лейаут буде замінено.`)) return;
+      customPositions = seedFrom(layout);
+      saveCustom();
+      currentLayoutId = CUSTOM_ID;
+    } else {
+      currentLayoutId = layout.id;
+    }
+    localStorage.setItem(STORAGE_LAYOUT, currentLayoutId);
+    renderControls();
+    renderBoard();
   }
 
   /* ---------- Клітинки ---------- */
@@ -77,40 +178,39 @@
 
     cell.innerHTML = `
       <div class="cell__inner">
-        <div class="cell__face cell__front">
-          <span class="cell__num">${prize.day}</span>
-        </div>
-        <div class="cell__face cell__back">
-          <img src="${prize.image}" alt="${prize.title}" loading="lazy" />
-        </div>
-      </div>`;
+        <div class="cell__face cell__front"><span class="cell__num">${prize.day}</span></div>
+        <div class="cell__face cell__back"><img src="${prize.image}" alt="${prize.title}" loading="lazy" /></div>
+      </div>
+      <span class="cell__coord"></span>`;
 
-    cell.addEventListener('click', () => onOpen(prize, cell));
+    cell.addEventListener('click', () => { if (mode !== 'edit') onOpen(prize, cell); });
     return cell;
   }
 
   function renderBoard() {
     board.innerHTML = '';
-    const isGrid = currentLayout.type === 'grid';
+    const layout = getLayout(currentLayoutId);
+    const isGrid = layout.type === 'grid';
 
-    board.className = 'board ' + (isGrid ? 'board--grid' : 'board--free');
+    board.className = 'board ' + (isGrid ? 'board--grid' : 'board--free') + (mode === 'edit' ? ' is-edit' : '');
 
     if (isGrid) {
-      board.style.setProperty('--cols', currentLayout.cols || 6);
-      // У сітці порядок визначається row/col → сортуємо за (row, col)
+      board.style.setProperty('--cols', layout.cols || 6);
       const sorted = [...PRIZES].sort((a, b) => {
-        const pa = currentLayout.positions[a.day];
-        const pb = currentLayout.positions[b.day];
+        const pa = layout.positions[a.day], pb = layout.positions[b.day];
         return pa.row - pb.row || pa.col - pb.col;
       });
       sorted.forEach((prize) => board.appendChild(createCell(prize)));
     } else {
       PRIZES.forEach((prize) => {
-        const pos = currentLayout.positions[prize.day];
+        const pos = layout.positions[prize.day];
         if (!pos) return;
         const cell = createCell(prize);
         cell.style.setProperty('--x', pos.x + '%');
         cell.style.setProperty('--y', pos.y + '%');
+        const badge = cell.querySelector('.cell__coord');
+        badge.textContent = `${Math.round(pos.x)},${Math.round(pos.y)}`;
+        if (mode === 'edit') attachDrag(cell, prize, badge);
         board.appendChild(cell);
       });
       sizeFreeCells();
@@ -119,22 +219,56 @@
 
   /* Розмір клітинок у вільному режимі — масштабується під ширину поля */
   function sizeFreeCells() {
-    if (currentLayout.type !== 'free') return;
+    if (getLayout(currentLayoutId).type !== 'free') return;
     const w = board.clientWidth || board.offsetWidth;
-    // ~9 клітинок умовно по ширині; межі тримають їх читабельними
     const size = Math.max(58, Math.min(120, w / 8.5));
     board.style.setProperty('--cell-size', size + 'px');
   }
 
-  /* ---------- Відкриття призу ---------- */
+  /* ---------- Перетягування (режим редагування) ---------- */
+  function attachDrag(cell, prize, badge) {
+    let dragging = false;
+    cell.style.touchAction = 'none';
+
+    cell.addEventListener('pointerdown', (e) => {
+      if (mode !== 'edit') return;
+      e.preventDefault();
+      dragging = true;
+      cell.classList.add('is-dragging');
+      try { cell.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    cell.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const rect = board.getBoundingClientRect();
+      let x = clamp(((e.clientX - rect.left) / rect.width) * 100, 2, 98);
+      let y = clamp(((e.clientY - rect.top) / rect.height) * 100, 2, 98);
+      if (snap) { const s = 2.5; x = Math.round(x / s) * s; y = Math.round(y / s) * s; }
+      x = +x.toFixed(1); y = +y.toFixed(1);
+      cell.style.setProperty('--x', x + '%');
+      cell.style.setProperty('--y', y + '%');
+      customPositions[prize.day] = { x, y };
+      badge.textContent = `${Math.round(x)},${Math.round(y)}`;
+    });
+
+    const end = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      cell.classList.remove('is-dragging');
+      try { cell.releasePointerCapture(e.pointerId); } catch (_) {}
+      saveCustom();
+    };
+    cell.addEventListener('pointerup', end);
+    cell.addEventListener('pointercancel', end);
+  }
+
+  /* ---------- Відкриття призу (режим перегляду) ---------- */
   let modalTimer = null;
   function onOpen(prize, cell) {
     const firstTime = !opened.has(prize.day);
     opened.add(prize.day);
     saveOpened();
     cell.classList.add('is-open');
-
-    // Невелика затримка, щоб встигла програтись анімація перевертання
     clearTimeout(modalTimer);
     modalTimer = setTimeout(() => showModal(prize), firstTime ? 420 : 120);
   }
@@ -148,20 +282,65 @@
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
   }
-
   function closeModal() {
     modal.hidden = true;
     document.body.style.overflow = '';
   }
+  modal.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close')) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
 
-  modal.addEventListener('click', (e) => {
-    if (e.target.hasAttribute('data-close')) closeModal();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  /* ---------- Тост ---------- */
+  let toastTimer = null;
+  function toast(msg) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('is-on'), 2200);
+  }
+
+  /* ---------- Дії панелі редагування ---------- */
+  function copyCoords() {
+    const pos = customPositions || gridSeed(6);
+    const lines = PRIZES.map((p) => {
+      const c = pos[p.day];
+      return `      ${p.day}: { x: ${c.x}, y: ${c.y} },`;
+    }).join('\n');
+    const text = `{\n  id: 'custom',\n  name: 'Мій лейаут',\n  type: 'free',\n  positions: {\n${lines}\n  },\n}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => toast('Координати скопійовано в буфер 📋'),
+        () => window.prompt('Скопіюй координати (Ctrl/Cmd+C):', text)
+      );
+    } else {
+      window.prompt('Скопіюй координати (Ctrl/Cmd+C):', text);
+    }
+  }
+
+  /* ---------- Слухачі панелей ---------- */
+  modeToggle.addEventListener('click', () => setMode(mode === 'edit' ? 'view' : 'edit'));
+
+  snapToggle.addEventListener('change', () => {
+    snap = snapToggle.checked;
+    localStorage.setItem(STORAGE_SNAP, snap ? '1' : '0');
   });
 
-  /* ---------- Скидання ---------- */
+  copyCoordsBtn.addEventListener('click', copyCoords);
+
+  clearCustomBtn.addEventListener('click', () => {
+    if (!confirm('Очистити мій лейаут і вирівняти призи в сітку?')) return;
+    customPositions = gridSeed(6);
+    saveCustom();
+    renderBoard();
+    toast('Мій лейаут вирівняно в сітку');
+  });
+
   resetBtn.addEventListener('click', () => {
     if (!confirm('Скинути всі відкриті віконця?')) return;
     opened = new Set();
@@ -169,7 +348,6 @@
     renderBoard();
   });
 
-  /* ---------- Реакція на зміну розміру ---------- */
   let resizeRAF = null;
   window.addEventListener('resize', () => {
     cancelAnimationFrame(resizeRAF);
@@ -177,6 +355,11 @@
   });
 
   /* ---------- Старт ---------- */
+  // У режимі редагування завжди працюємо з «моїм лейаутом»
+  if (mode === 'edit') {
+    currentLayoutId = CUSTOM_ID;
+    if (!customPositions) { customPositions = gridSeed(6); saveCustom(); }
+  }
   renderControls();
   renderBoard();
 })();

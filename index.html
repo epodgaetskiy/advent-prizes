@@ -18,7 +18,17 @@
       <div class="controls__group" id="layoutControls" role="group" aria-label="Варіанти розкладки">
         <!-- кнопки варіантів генеруються в app.js -->
       </div>
-      <button class="btn btn--ghost" id="resetBtn" type="button">↺ Скинути</button>
+      <button class="btn" id="modeToggle" type="button">✏️ Редагувати</button>
+      <button class="btn btn--ghost" id="resetBtn" type="button">↺ Скинути прогрес</button>
+    </div>
+
+    <div class="editbar" id="editbar" hidden>
+      <span class="editbar__hint">✏️ Перетягуй призи, щоб розставити. Координати зберігаються автоматично. Кнопки розкладок вгорі — взяти за основу.</span>
+      <label class="editbar__snap">
+        <input type="checkbox" id="snapToggle" /> Прив'язка до сітки
+      </label>
+      <button class="btn btn--ghost btn--sm" id="copyCoordsBtn" type="button">📋 Копіювати координати</button>
+      <button class="btn btn--ghost btn--sm" id="clearCustomBtn" type="button">↺ Очистити мій лейаут</button>
     </div>
   </header>
 
