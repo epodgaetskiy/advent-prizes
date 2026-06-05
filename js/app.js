@@ -350,7 +350,16 @@
       el.style.height = layout.long
         ? (PRIZES.length * (device === 'mobile' ? 40 : 34)) + 'px'
         : '100%';
-      const size = device === 'mobile' ? Math.max(24, w / 5) : Math.max(26, w / 9);
+      // розмір призу залежить від обох вимірів поля → клітинки не налазять
+      let size;
+      if (layout.long) {
+        size = device === 'mobile' ? 30 : 26;
+      } else {
+        const h = el.clientHeight || w * 0.6;
+        const base = Math.min(w, h);
+        size = device === 'mobile' ? base / 9 : base / 8;
+      }
+      size = Math.max(18, Math.round(size));
       el.style.setProperty('--pv-size', size + 'px');
       PRIZES.forEach((p) => {
         const pos = layout.positions[p.day];
