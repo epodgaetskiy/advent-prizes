@@ -16,8 +16,6 @@
   const patternThumb = document.getElementById('patternThumb');
   const patternName = document.getElementById('patternName');
   const choosePatternBtn = document.getElementById('choosePatternBtn');
-  const customizeBtn = document.getElementById('customizeBtn');
-  const previewBtn = document.getElementById('previewBtn');
 
   // DOM — модал
   const cfgModal = document.getElementById('cfgModal');
@@ -402,8 +400,6 @@
     else { openConfig('preview'); }
   }));
   choosePatternBtn.addEventListener('click', () => openConfig('preview'));
-  customizeBtn.addEventListener('click', () => openConfig('edit'));
-  previewBtn.addEventListener('click', () => { if (kind === 'grid') openGridPreview(); else openConfig('preview'); });
 
   wsTabEdit.addEventListener('click', () => selectTab('edit'));
   wsTabPreview.addEventListener('click', () => selectTab('preview'));
