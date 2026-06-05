@@ -23,7 +23,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=14" />
+  <link rel="stylesheet" href="css/styles.css?v=15" />
 </head>
 <body class="bg-[#f1f3f4] text-ink">
 
@@ -68,14 +68,7 @@
       <!-- Head -->
       <div class="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
         <h2 class="text-base font-medium">Calendar layout</h2>
-        <div class="flex items-center gap-3">
-          <span id="autosaveHint" class="text-[12px] text-sub"></span>
-          <button id="saveOwnBtn"
-            class="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-white transition hover:bg-primaryDark">
-            Save layout
-          </button>
-          <button class="text-sub transition hover:text-ink" data-close aria-label="Close">✕</button>
-        </div>
+        <button class="text-sub transition hover:text-ink" data-close aria-label="Close">✕</button>
       </div>
 
       <div class="flex min-h-0 flex-1">
@@ -93,9 +86,16 @@
               <button id="wsTabPreview" class="ws-tab rounded px-4 py-1.5 text-[13px]">👁 Preview</button>
             </div>
             <span id="wsLayoutName" class="text-[13px] text-sub"></span>
-            <div id="deviceToggle" class="ml-auto inline-flex rounded-md bg-gray-100 p-0.5 ring-1 ring-line" hidden>
-              <button data-device="desktop" class="pv-tab rounded px-3 py-1 text-[13px]">🖥 Desktop</button>
-              <button data-device="mobile" class="pv-tab rounded px-3 py-1 text-[13px]">📱 Mobile</button>
+            <div class="ml-auto flex items-center gap-3">
+              <div id="deviceToggle" class="inline-flex rounded-md bg-gray-100 p-0.5 ring-1 ring-line" hidden>
+                <button data-device="desktop" class="pv-tab rounded px-3 py-1 text-[13px]">🖥 Desktop</button>
+                <button data-device="mobile" class="pv-tab rounded px-3 py-1 text-[13px]">📱 Mobile</button>
+              </div>
+              <span id="autosaveHint" class="text-[12px] text-sub"></span>
+              <button id="saveOwnBtn"
+                class="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-white transition hover:bg-primaryDark">
+                Save layout
+              </button>
             </div>
           </div>
 
@@ -129,7 +129,7 @@
     </div>
   </div>
 
-  <script src="js/data.js?v=14"></script>
-  <script src="js/app.js?v=14"></script>
+  <script src="js/data.js?v=15"></script>
+  <script src="js/app.js?v=15"></script>
 </body>
 </html>
