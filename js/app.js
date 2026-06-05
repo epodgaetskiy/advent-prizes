@@ -21,7 +21,6 @@
   const cfgModal = document.getElementById('cfgModal');
   const sidebar = document.getElementById('sidebar');
   const patternList = document.getElementById('patternList');
-  const createOwnBtn = document.getElementById('createOwnBtn');
   const wsTabEdit = document.getElementById('wsTabEdit');
   const wsTabPreview = document.getElementById('wsTabPreview');
   const wsLayoutName = document.getElementById('wsLayoutName');
@@ -243,7 +242,6 @@
     if (customPositions) {
       patternList.appendChild(sideItem('Custom', customLayout(), working === 'custom', () => selectWorking('custom')));
     }
-    createOwnBtn.textContent = customPositions ? '✏️ Edit your layout' : '✏️ Create your own';
   }
   function sideItem(label, layout, active, onClick) {
     const b = document.createElement('button');
@@ -366,10 +364,6 @@
   }
 
   /* ---------- Дії ---------- */
-  function createOwn() {
-    editingDraft = seedFrom(layoutOf(working));
-    selectTab('edit');
-  }
   function saveOwn() {
     if (!editingDraft) return;
     customPositions = editingDraft;
@@ -403,7 +397,6 @@
 
   wsTabEdit.addEventListener('click', () => selectTab('edit'));
   wsTabPreview.addEventListener('click', () => selectTab('preview'));
-  createOwnBtn.addEventListener('click', createOwn);
   saveOwnBtn.addEventListener('click', saveOwn);
   clearCustomBtn.addEventListener('click', () => { editingDraft = gridSeed(6); renderEditor(); });
   copyCoordsBtn.addEventListener('click', copyCoords);

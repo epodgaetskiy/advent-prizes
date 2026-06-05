@@ -23,7 +23,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="css/styles.css?v=13" />
+  <link rel="stylesheet" href="css/styles.css?v=14" />
 </head>
 <body class="bg-[#f1f3f4] text-ink">
 
@@ -66,9 +66,16 @@
     <div class="relative flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
 
       <!-- Head -->
-      <div class="flex items-center justify-between border-b border-line px-5 py-3">
+      <div class="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
         <h2 class="text-base font-medium">Calendar layout</h2>
-        <button class="text-sub transition hover:text-ink" data-close aria-label="Close">✕</button>
+        <div class="flex items-center gap-3">
+          <span id="autosaveHint" class="text-[12px] text-sub"></span>
+          <button id="saveOwnBtn"
+            class="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-white transition hover:bg-primaryDark">
+            Save layout
+          </button>
+          <button class="text-sub transition hover:text-ink" data-close aria-label="Close">✕</button>
+        </div>
       </div>
 
       <div class="flex min-h-0 flex-1">
@@ -76,12 +83,6 @@
         <aside id="sidebar" class="flex w-60 shrink-0 flex-col border-r border-line">
           <div class="px-4 pt-4 pb-2 text-[11px] font-semibold uppercase tracking-wide text-label">Patterns</div>
           <div id="patternList" class="flex-1 space-y-1 overflow-auto px-3 pb-3"></div>
-          <div class="border-t border-line p-3">
-            <button id="createOwnBtn"
-              class="w-full rounded-md border border-line px-3 py-2 text-sm transition hover:bg-gray-50">
-              ✏️ Create your own
-            </button>
-          </div>
         </aside>
 
         <!-- Основна частина: Edit / Preview -->
@@ -123,20 +124,12 @@
             </div>
           </div>
 
-          <!-- Футер -->
-          <div class="flex items-center justify-between gap-3 border-t border-line px-5 py-4">
-            <span id="autosaveHint" class="text-[12px] text-sub"></span>
-            <button id="saveOwnBtn"
-              class="rounded-md bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primaryDark">
-              Save layout
-            </button>
-          </div>
         </section>
       </div>
     </div>
   </div>
 
-  <script src="js/data.js?v=13"></script>
-  <script src="js/app.js?v=13"></script>
+  <script src="js/data.js?v=14"></script>
+  <script src="js/app.js?v=14"></script>
 </body>
 </html>
